@@ -9,7 +9,7 @@
 html,body{height:100%;margin:0;background:#eef1f4}
 body{font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink)}
 #map{position:fixed;inset:0}
-#msg{position:fixed;left:12px;right:12px;top:max(12px,env(safe-area-inset-top));font-size:13px;color:var(--muted);background:#fff;padding:8px 12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:10}
+#msg{position:fixed;left:12px;right:52px;top:max(12px,env(safe-area-inset-top));font-size:13px;color:var(--muted);background:#fff;padding:8px 12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:10}
 #msg.err{color:#c92a2a}
 .pop{position:relative;width:min(300px,calc(100vw - 40px));background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.25);margin-bottom:14px;font-size:14px;overflow:hidden}
 .pop:after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-8px;border:8px solid transparent;border-bottom:0;border-top-color:#fff}
@@ -31,10 +31,32 @@ body{font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",s
 textarea{font:inherit;font-size:15px;border:1px solid var(--line);border-radius:8px;padding:8px;resize:none;min-height:56px;width:100%;box-sizing:border-box}
 .add{align-self:flex-end;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;border-radius:8px;padding:8px 14px;cursor:pointer}
 button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#tab{position:fixed;right:0;top:calc(max(12px,env(safe-area-inset-top)) + 4px);z-index:20;width:34px;height:64px;border:0;border-radius:14px 0 0 14px;background:rgba(60,52,58,.82);color:#f1e9ee;font-size:22px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);display:grid;place-items:center;transition:opacity .2s}
+#tab svg{width:14px;height:24px}
+#sbar{position:fixed;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));z-index:21;transform:translateX(calc(100% + 24px));transition:transform .25s ease;pointer-events:none}
+#sbar.open{transform:none;pointer-events:auto}
+@media (prefers-reduced-motion:reduce){#sbar{transition:none}}
+.sbox{display:flex;align-items:center;gap:4px;background:#fff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.25);padding:4px 4px 4px 12px}
+.sbox input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:16px;padding:9px 0;background:none;color:var(--ink)}
+.sbox button{width:38px;height:38px;border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;border-radius:8px}
+#sugg{list-style:none;margin:6px 0 0;padding:4px 0;background:#fff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.2);max-height:50vh;overflow:auto}
+#sugg:empty{display:none}
+#sugg li{padding:9px 14px;cursor:pointer;border-bottom:1px solid #f0f2f4}
+#sugg li:last-child{border-bottom:0}
+#sugg li:hover,#sugg li.act{background:#f2f5ff}
+#sugg .nm{font-weight:600}
+#sugg .ad{font-size:12.5px;color:var(--muted);margin-top:2px}
+#sugg .tag{font-size:10.5px;font-weight:700;color:var(--note);margin-left:6px}
+#sugg li.none{color:var(--muted);cursor:default;background:none}
 </style>
 </head>
 <body>
 <div id="map"></div>
+<button id="tab" aria-label="Открыть поиск" aria-expanded="false"><svg viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3 3 12l8 9"/></svg></button>
+<div id="sbar" role="search">
+  <div class="sbox"><input id="sq" type="search" placeholder="Адрес, дом или место" autocomplete="off" enterkeyhint="search" aria-label="Поиск"><button id="sclose" aria-label="Закрыть поиск">✕</button></div>
+  <ul id="sugg"></ul>
+</div>
 <div id="msg" hidden></div>
 <script>
 const APPKEY='53f83a531954055ca29efd3e8a0d1a45';
@@ -105,6 +127,7 @@ function center(path){let la=0,ln=0;path.forEach(p=>{la+=p[0];ln+=p[1];});return
 // ---------- tap → highlight + popup ----------
 function clearSel(){if(hl){hl.setMap(null);hl=null;}if(pop){pop.setMap(null);pop=null;}}
 function onTap(ll){
+  if(sbar.classList.contains('open')){openSearch(false);return;}
   clearSel();
   const lat=ll.getLat(),lng=ll.getLng(),b=buildingAt(lat,lng);
   const path=b?b.path:null;
@@ -141,6 +164,42 @@ function showPop(at,info,open){
   }
   pop=new kakao.maps.CustomOverlay({map,position:new kakao.maps.LatLng(at[0],at[1]),content:el,yAnchor:1,zIndex:10,clickable:true});
   if(open){const pt=map.getProjection().containerPointFromCoords(new kakao.maps.LatLng(at[0],at[1]));if(pt.y<330)map.panBy(0,pt.y-330);}
+}
+
+// ---------- search (hidden behind the tab) ----------
+const AREA_C=[35.2075,129.0065],AREA_R=1500;   // search radius around the territory
+const tab=document.getElementById('tab'),sbar=document.getElementById('sbar'),sq=document.getElementById('sq'),sugg=document.getElementById('sugg');
+function openSearch(on){sbar.classList.toggle('open',on);tab.style.opacity=on?0:1;tab.style.pointerEvents=on?'none':'';tab.setAttribute('aria-expanded',on);
+  if(on)setTimeout(()=>sq.focus(),200);else{sq.blur();sugg.innerHTML='';}}
+tab.onclick=()=>openSearch(true);
+document.getElementById('sclose').onclick=()=>{sq.value='';openSearch(false);};
+let sTimer,sSeq=0,sItems=[];
+sq.addEventListener('input',()=>{clearTimeout(sTimer);sTimer=setTimeout(runSearch,250);});
+sq.addEventListener('keydown',e=>{if(e.key==='Enter'&&sItems[0]){e.preventDefault();pick(sItems[0]);}if(e.key==='Escape')openSearch(false);});
+const inArea=(lat,lng,addr)=>{const d=Math.hypot((lat-AREA_C[0])*111000,(lng-AREA_C[1])*91000);return d<=AREA_R&&(!addr||/구포|북구/.test(addr));};
+function runSearch(){
+  const q=sq.value.trim(),seq=++sSeq;if(!q){sugg.innerHTML='';sItems=[];return;}
+  if(!map)return;
+  const out=[],seen=new Set(),push=it=>{const k=it.lat.toFixed(5)+','+it.lng.toFixed(5);if(seen.has(k))return;seen.add(k);out.push(it);};
+  const ql=q.toLowerCase();
+  Object.values(notes).forEach(r=>{const hay=(r.nw+' '+r.old+' '+(r.bld||'')+' '+r.notes.map(n=>n.t).join(' ')).toLowerCase();
+    if(hay.includes(ql))push({nm:r.bld||r.nw||r.old,ad:[r.nw,r.old].filter(Boolean).join(' · '),lat:r.at[0],lng:r.at[1],noted:true});});
+  const S=kakao.maps.services,loc=new kakao.maps.LatLng(AREA_C[0],AREA_C[1]);let left=2;
+  const fin=()=>{if(--left||seq!==sSeq)return;sItems=out.slice(0,12);render();};
+  geocoder.addressSearch('부산 북구 '+q,(r,st)=>{if(st===S.Status.OK)r.forEach(a=>{const lat=+a.y,lng=+a.x;if(!inArea(lat,lng,a.address_name))return;
+      const ra=a.road_address,ad=a.address;push({nm:ra?short(ra.address_name)+(ra.building_name?' '+ra.building_name:''):short(a.address_name),ad:ad?'지번 '+short(ad.address_name):'',lat,lng});});fin();},{size:10});
+  new S.Places().keywordSearch(q,(r,st)=>{if(st===S.Status.OK)r.forEach(p=>{const lat=+p.y,lng=+p.x;if(!inArea(lat,lng,p.address_name))return;
+      push({nm:p.place_name,ad:short(p.road_address_name||p.address_name),lat,lng});});fin();},{location:loc,radius:AREA_R,sort:S.SortBy.DISTANCE});
+}
+function render(){
+  sugg.innerHTML=sItems.length?sItems.map((it,i)=>`<li data-i="${i}"><div class="nm">${esc(it.nm)}${it.noted?'<span class="tag">заметка</span>':''}</div>${it.ad?`<div class="ad">${esc(it.ad)}</div>`:''}</li>`).join(''):'<li class="none">На участке ничего не найдено</li>';
+  sugg.querySelectorAll('li[data-i]').forEach(li=>li.onclick=()=>pick(sItems[+li.dataset.i]));
+}
+async function pick(it){
+  openSearch(false);const ll=new kakao.maps.LatLng(it.lat,it.lng);
+  map.setLevel(2);map.setCenter(ll);
+  try{await loadVisible();}catch(e){}
+  onTap(ll);
 }
 
 // ---------- houses with notes are tinted orange ----------
