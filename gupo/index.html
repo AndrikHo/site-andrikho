@@ -17,7 +17,7 @@
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:#eef1f4;overflow:hidden}
-body{font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);-webkit-tap-highlight-color:transparent;word-break:keep-all;overflow-wrap:anywhere}
 button{font:inherit;color:inherit}
 button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #map{position:fixed;inset:0}
@@ -36,8 +36,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 #msg.hide{opacity:0;pointer-events:none}
 
 /* bottom island: account + edit */
-#mainIsl{left:50%;bottom:calc(var(--sb) + 18px);transform:translateX(-50%);display:flex;gap:4px;padding:5px;border-radius:999px}
-#mainIsl button{display:flex;align-items:center;gap:8px;border:0;background:none;padding:10px 18px;border-radius:999px;font-size:14.5px;font-weight:600;cursor:pointer}
+#mainIsl{width:max-content;left:50%;bottom:calc(var(--sb) + 18px);transform:translateX(-50%);display:flex;gap:4px;padding:5px;border-radius:999px}
+#mainIsl button{white-space:nowrap;display:flex;align-items:center;gap:8px;border:0;background:none;padding:10px 18px;border-radius:999px;font-size:14.5px;font-weight:600;cursor:pointer}
 #mainIsl button:hover{background:rgba(24,33,43,.06)}
 #mainIsl svg{width:21px;height:21px}
 #mainIsl .sep{width:1px;background:var(--line);margin:8px 0}
@@ -109,6 +109,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .sheet .acts button{border:1px solid var(--line);background:rgba(255,255,255,.7);border-radius:10px;padding:9px 14px;cursor:pointer;font-size:14px}
 .sheet .acts button.pri{background:var(--accentG);border-color:transparent;color:#fff;font-weight:600}
 .sheet .acts button.danger{color:var(--danger);margin-right:auto}
+.langrow{justify-content:space-between;color:var(--ink);font-size:14px}
 .sheet p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.45}
 
 /* search tab + bar (top right) */
@@ -181,9 +182,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 
 <!-- normal mode: bottom island -->
 <div id="mainIsl" class="isl glass">
-  <button id="bAcc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Аккаунт</button>
+  <button id="bAcc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span id="lAcc">Аккаунт</span></button>
   <span class="sep"></span>
-  <button id="bEdit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>Рисовать</button>
+  <button id="bEdit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg><span id="lEdit">Рисовать</span></button>
 </div>
 
 <!-- edit mode -->
@@ -210,8 +211,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   <div class="acts"><button class="danger" id="txtDel">Удалить</button><button id="txtCancel">Отмена</button><button class="pri" id="txtOk">Готово</button></div>
 </div>
 <div id="accSheet" class="isl glass sheet out-b">
-  <h4>Аккаунт</h4>
-  <p>Вход и общий доступ для нескольких телефонов появятся позже. Сейчас заметки и рисунки хранятся только на этом телефоне. Сохрани копию, чтобы не потерять их или перенести на другой телефон.</p>
+  <h4 id="accH">Аккаунт</h4>
+  <div class="row langrow"><span id="langL">Язык</span><div class="seg" id="langSeg"><button data-l="ru">Русский</button><button data-l="ko">한국어</button></div></div>
+  <p id="accP">Вход и общий доступ для нескольких телефонов появятся позже. Сейчас заметки и рисунки хранятся только на этом телефоне. Сохрани копию, чтобы не потерять их или перенести на другой телефон.</p>
   <div class="acts">
     <button class="danger" id="accClear">Удалить все рисунки</button>
     <button id="accImp">Загрузить копию</button>
@@ -235,8 +237,72 @@ const show=(el,on,dir)=>el.classList.toggle('out-'+dir,!on);
 const s=document.createElement('script');
 s.src='https://dapi.kakao.com/v2/maps/sdk.js?appkey='+APPKEY+'&libraries=services&autoload=false';
 s.onload=()=>kakao.maps.load(init);
-s.onerror=()=>msg('KakaoMap не загрузился. Проверь интернет.',true);
+s.onerror=()=>msg(tr('sdk_fail'),true);
 document.head.appendChild(s);
+
+
+/* =================== languages =================== */
+const I18N={
+ru:{title:'Участок Гупо-дон',search_open:'Открыть поиск',search_ph:'Адрес, дом или место',search:'Поиск',search_close:'Закрыть поиск',
+ acc:'Аккаунт',draw:'Рисовать',close_edit:'Закрыть редактирование',tools:'Инструменты',t_zone:'Граница участка',t_shape:'Фигуры',t_arrow:'Стрелки',t_font:'Шрифт',t_color:'Цвет и прозрачность',
+ undo:'Назад',redo:'Вперёд',text:'Текст',text_ph:'Текст или цифры',from:'от',to:'до',del:'Удалить',cancel:'Отмена',done:'Готово',
+ acc_p:'Вход и общий доступ для нескольких телефонов появятся позже. Сейчас заметки и рисунки хранятся только на этом телефоне. Сохрани копию, чтобы не потерять их или перенести на другой телефон.',
+ acc_clear:'Удалить все рисунки',acc_imp:'Загрузить копию',acc_exp:'Сохранить копию',close:'Закрыть',lang:'Язык',
+ sdk_fail:'KakaoMap не загрузился. Проверь интернет.',hello:'Нажми или зажми дом, чтобы увидеть адрес и заметки.',
+ osm_fail:'Контуры домов загрузились не везде. Дом всё равно можно выбрать, просто без контура.',no_addr:'Адрес не найден',
+ collapse:'Свернуть ▲',notes_n:'Заметки: {n} ▼',note_add:'Добавить заметку ▼',note_del:'Удалить заметку',no_notes:'Заметок пока нет.',
+ note_ph:'Например: код двери 1234#, оставлять у охраны',save:'Сохранить',tag_note:'заметка',nothing:'На участке ничего не найдено',
+ f_sys:'Обычный',f_mono:'Моно 123',
+ s_pin:'Метка',s_round:'Скруглённый',s_rect:'Прямоугольник',s_pill:'Капсула',s_ellipse:'Овал',s_flag:'Флажок',
+ a_plain:'Обычная',a_thick:'Толстая',a_num:'С цифрами от–до',a_chev:'Стрелки по линии',a_dash:'Штрих-пунктир',
+ shapes:'Фигуры',shapes_hint:'Выбери фигуру и нажми на карту. Фигура растёт по ширине вместе с текстом.',arrows:'Стрелки',font:'Шрифт',
+ changes:'Меняется: {x}',bold:'Ж',italic:'К',horiz:'Обычно',vert:'Сверху вниз',spacing:'Между буквами',text_color:'Цвет текста',opacity:'Прозрачность',
+ color:'Цвет',bright:'Яркость',tg_shape:'фигура',tg_arrow:'стрелка',tg_zone:'граница',tg_new:'новые фигуры и стрелки',tg_selshape:'выбранная фигура',tg_newshape:'новые фигуры',
+ h_zone:'Граница: наведи крестик на угол и нажми «Поставить точку». Точки можно двигать пальцем. Точек: {n}',put_pt:'Поставить точку',rm_pt:'Убрать точку',erase:'Стереть',sure_erase:'Точно стереть?',
+ h_shape:'Нажми на карту, чтобы поставить фигуру «{x}».',h_arrow2:'Теперь нажми, куда указывает стрелка.',h_arrow:'Стрелка «{x}»: нажми, откуда, потом куда.',
+ h_selshape:'Тяни — переместить. Двумя пальцами — размер. Цвет и шрифт — справа.',h_selarrow:'Тяни за середину — переместить, за конец — повернуть. Двумя пальцами — толщина.',
+ numbers:'Цифры',unsel:'Снять выбор',h_idle:'Нажми на фигуру или стрелку, чтобы выбрать. Инструменты — справа.',
+ txt_num:'Цифры на стрелке: от → до',txt_new:'Текст в фигуре',txt_edit:'Изменить текст',
+ exp_ok:'Копия сохранена в «Загрузки».',imp_ok:'Копия загружена.',imp_bad:'Это не файл копии карты.',sure_del:'Точно удалить? Нажми ещё раз',
+ cleared:'Рисунки удалены. Вернуть можно кнопкой «Назад» в режиме рисования.',locale:'ru-RU'},
+ko:{title:'구포동 배송 구역',search_open:'검색 열기',search_ph:'주소, 건물 또는 장소',search:'검색',search_close:'검색 닫기',
+ acc:'계정',draw:'그리기',close_edit:'편집 닫기',tools:'도구',t_zone:'구역 경계',t_shape:'도형',t_arrow:'화살표',t_font:'글꼴',t_color:'색상과 투명도',
+ undo:'실행 취소',redo:'다시 실행',text:'텍스트',text_ph:'텍스트 또는 숫자',from:'부터',to:'까지',del:'삭제',cancel:'취소',done:'완료',
+ acc_p:'로그인과 여러 휴대폰 간 공유 기능은 나중에 추가됩니다. 지금은 메모와 그림이 이 휴대폰에만 저장됩니다. 잃어버리지 않도록, 또는 다른 휴대폰으로 옮기려면 백업을 저장하세요.',
+ acc_clear:'그림 모두 삭제',acc_imp:'백업 불러오기',acc_exp:'백업 저장',close:'닫기',lang:'언어',
+ sdk_fail:'카카오맵을 불러오지 못했습니다. 인터넷 연결을 확인하세요.',hello:'건물을 누르거나 길게 누르면 주소와 메모가 보입니다.',
+ osm_fail:'일부 건물 윤곽을 불러오지 못했습니다. 윤곽 없이도 건물을 선택할 수 있습니다.',no_addr:'주소를 찾을 수 없습니다',
+ collapse:'접기 ▲',notes_n:'메모 {n}개 ▼',note_add:'메모 추가 ▼',note_del:'메모 삭제',no_notes:'아직 메모가 없습니다.',
+ note_ph:'예: 공동현관 비밀번호 1234#, 경비실에 맡기기',save:'저장',tag_note:'메모',nothing:'구역 안에서 찾은 결과가 없습니다',
+ f_sys:'기본',f_mono:'고정폭 123',
+ s_pin:'핀',s_round:'둥근 사각형',s_rect:'사각형',s_pill:'캡슐',s_ellipse:'타원',s_flag:'깃발',
+ a_plain:'기본',a_thick:'굵은 화살표',a_num:'번호 (부터–까지)',a_chev:'연속 화살표',a_dash:'일점쇄선',
+ shapes:'도형',shapes_hint:'도형을 고르고 지도를 누르세요. 글자 수에 따라 도형 너비가 늘어납니다.',arrows:'화살표',font:'글꼴',
+ changes:'변경 대상: {x}',bold:'굵게',italic:'기울임',horiz:'가로쓰기',vert:'세로쓰기',spacing:'자간',text_color:'글자 색',opacity:'투명도',
+ color:'색상',bright:'밝기',tg_shape:'도형',tg_arrow:'화살표',tg_zone:'구역 경계',tg_new:'새 도형과 화살표',tg_selshape:'선택한 도형',tg_newshape:'새 도형',
+ h_zone:'경계: 십자선을 모서리에 맞추고 「점 찍기」를 누르세요. 점은 손가락으로 옮길 수 있습니다. 점 {n}개',put_pt:'점 찍기',rm_pt:'점 빼기',erase:'지우기',sure_erase:'정말 지울까요?',
+ h_shape:'지도를 눌러 「{x}」 도형을 놓으세요.',h_arrow2:'이제 화살표가 가리킬 곳을 누르세요.',h_arrow:'「{x}」 화살표: 시작점을 누른 뒤 끝점을 누르세요.',
+ h_selshape:'끌어서 이동, 두 손가락으로 크기 조절. 색상과 글꼴은 오른쪽에 있습니다.',h_selarrow:'가운데를 끌면 이동, 끝을 끌면 방향 변경. 두 손가락으로 굵기 조절.',
+ numbers:'숫자',unsel:'선택 해제',h_idle:'도형이나 화살표를 눌러 선택하세요. 도구는 오른쪽에 있습니다.',
+ txt_num:'화살표 숫자: 부터 → 까지',txt_new:'도형 안 텍스트',txt_edit:'텍스트 수정',
+ exp_ok:'백업이 「다운로드」에 저장되었습니다.',imp_ok:'백업을 불러왔습니다.',imp_bad:'지도 백업 파일이 아닙니다.',sure_del:'정말 삭제할까요? 한 번 더 누르세요',
+ cleared:'그림을 삭제했습니다. 그리기 모드의 「실행 취소」로 되돌릴 수 있습니다.',locale:'ko-KR'}};
+let LANG=store.get('gupo-lang',null)||((navigator.language||'').toLowerCase().startsWith('ko')?'ko':'ru');
+const tr=(k,v)=>{let s=(I18N[LANG]||I18N.ru)[k];if(s==null)s=I18N.ru[k]||k;if(v)for(const x in v)s=s.replace('{'+x+'}',v[x]);return s;};
+function applyLang(){
+  document.documentElement.lang=LANG;document.title=tr('title');
+  const T=(id,k)=>{const e=$(id);if(e)e.textContent=tr(k);},Aa=(id,k,ti)=>{const e=$(id);if(!e)return;e.setAttribute('aria-label',tr(k));if(ti)e.title=tr(k);};
+  Aa('tab','search_open');$('sq').placeholder=tr('search_ph');Aa('sq','search');Aa('sclose','search_close');
+  T('lAcc','acc');T('lEdit','draw');Aa('closeBtn','close_edit');Aa('toolIsl','tools');
+  Aa('tZone','t_zone',1);Aa('tShape','t_shape',1);Aa('tArrow','t_arrow',1);Aa('tFont','t_font',1);Aa('tColor','t_color',1);
+  Aa('hUndo','undo',1);Aa('hRedo','redo',1);
+  $('txtIn').placeholder=tr('text_ph');$('n1').placeholder=tr('from');Aa('n1','from');$('n2').placeholder=tr('to');Aa('n2','to');
+  T('txtDel','del');T('txtCancel','cancel');T('txtOk','done');
+  T('accH','acc');T('accP','acc_p');T('accClear','acc_clear');T('accImp','acc_imp');T('accExp','acc_exp');T('accClose','close');T('langL','lang');
+  document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',b.dataset.l===LANG));
+  if(typeof refreshUI==='function'&&D){refreshUI();if(panel)renderPanel();}
+  if(pop&&pop.__info)showPop(pop.__at,pop.__info,pop.__open);
+}
 
 let map,geocoder,hl=null,pop=null,noteShapes=[];
 let notes=store.get(NOTES_KEY,{});
@@ -252,7 +318,7 @@ function init(){
   kakao.maps.event.addListener(map,'click',e=>onTap(e.latLng));
   kakao.maps.event.addListener(map,'idle',loadVisible);
   drawNoted();drawAll();
-  msg('Нажми или зажми дом, чтобы увидеть адрес и заметки.',false,5000);
+  msg(tr('hello'),false,5000);
 }
 
 /* =================== building outlines (OpenStreetMap, cached per ~550 m tile) =================== */
@@ -279,7 +345,7 @@ async function loadVisible(){
   const ks=tileKeys(map.getBounds()).filter(k=>!tilesDone.has(k)&&!tilesLoading.has(k));
   if(!ks.length)return;ks.forEach(k=>tilesLoading.add(k));
   const r=await Promise.allSettled(ks.map(fetchTile));ks.forEach(k=>tilesLoading.delete(k));
-  if(r.some(x=>x.status==='rejected'))msg('Контуры домов загрузились не везде. Дом всё равно можно выбрать, просто без контура.',true,5000);
+  if(r.some(x=>x.status==='rejected'))msg(tr('osm_fail'),true,5000);
 }
 function inPoly(lat,lng,path){let ins=false;for(let i=0,j=path.length-1;i<path.length;j=i++){const [yi,xi]=path[i],[yj,xj]=path[j];
   if((yi>lat)!==(yj>lat)&&lng<(xj-xi)*(lat-yi)/(yj-yi)+xi)ins=!ins;}return ins;}
@@ -306,7 +372,7 @@ function houseAt(ll){
   else hl=new kakao.maps.Circle({map,center:ll,radius:6,strokeWeight:3,strokeColor:'#1f4fd1',fillColor:'#1f4fd1',fillOpacity:.25,zIndex:4});
   const at=path?center(path):[lat,lng];
   geocoder.coord2Address(lng,lat,(r,st)=>{
-    if(st!==kakao.maps.services.Status.OK||!r[0]){showPop(at,{nw:'',old:'Адрес не найден',bld:'',path});return;}
+    if(st!==kakao.maps.services.Status.OK||!r[0]){showPop(at,{nw:'',old:tr('no_addr'),bld:'',path});return;}
     const ra=r[0].road_address,ad=r[0].address;
     showPop(at,{nw:ra?short(ra.address_name):'',bld:ra&&ra.building_name||'',old:ad?short(ad.address_name):'',path});
   });
@@ -316,15 +382,15 @@ function showPop(at,info,open){
   if(pop)pop.setMap(null);
   const k=keyOf(info),rec=notes[k],list=rec?rec.notes:[];
   const el=document.createElement('div');el.className='pop';
-  el.innerHTML=`<button class="x" aria-label="Закрыть">✕</button>
+  el.innerHTML=`<button class="x" aria-label="${tr('close')}">✕</button>
    <button class="head" aria-expanded="${!!open}">
      ${info.nw?`<div class="new"><span class="lbl n">도로명</span>${esc(info.nw)}${info.bld?` <span class="bld">${esc(info.bld)}</span>`:''}</div>`:''}
      <div class="old"><span class="lbl o">지번</span>${esc(info.old||'—')}</div>
-     <div class="more">${open?'Свернуть ▲':(list.length?`Заметки: ${list.length} ▼`:'Добавить заметку ▼')}</div>
+     <div class="more">${open?tr('collapse'):(list.length?tr('notes_n',{n:list.length}):tr('note_add'))}</div>
    </button>
-   ${open?`<div class="pbody"><div class="notes">${list.length?list.map((n,i)=>`<div class="note"><div class="t">${esc(n.t)}</div><div class="d">${new Date(n.at).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div><button data-i="${i}" aria-label="Удалить заметку">✕</button></div>`).join(''):'<div class="empty">Заметок пока нет.</div>'}</div>
-     <textarea id="nt" placeholder="Например: код двери 1234#, оставлять у охраны"></textarea>
-     <button class="add">Сохранить</button></div>`:''}`;
+   ${open?`<div class="pbody"><div class="notes">${list.length?list.map((n,i)=>`<div class="note"><div class="t">${esc(n.t)}</div><div class="d">${new Date(n.at).toLocaleString(tr('locale'),{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div><button data-i="${i}" aria-label="${tr('note_del')}">✕</button></div>`).join(''):`<div class="empty">${tr('no_notes')}</div>`}</div>
+     <textarea id="nt" placeholder="${esc(tr('note_ph'))}"></textarea>
+     <button class="add">${tr('save')}</button></div>`:''}`;
   ['click','mousedown','touchstart','touchend','dblclick','wheel','pointerdown'].forEach(ev=>el.addEventListener(ev,e=>e.stopPropagation()));
   el.querySelector('.x').onclick=clearSel;
   el.querySelector('.head').onclick=()=>showPop(at,info,!open);
@@ -333,7 +399,7 @@ function showPop(at,info,open){
       notes[k]=notes[k]||{nw:info.nw,old:info.old,bld:info.bld,path:info.path,at,notes:[]};notes[k].notes.push({t,at:Date.now()});store.set(NOTES_KEY,notes);drawNoted();showPop(at,info,true);};
     el.querySelectorAll('.note button').forEach(b=>b.onclick=()=>{notes[k].notes.splice(+b.dataset.i,1);if(!notes[k].notes.length)delete notes[k];store.set(NOTES_KEY,notes);drawNoted();showPop(at,info,true);});
   }
-  pop=new kakao.maps.CustomOverlay({map,position:LL(at),content:el,yAnchor:1,zIndex:10,clickable:true});
+  pop=new kakao.maps.CustomOverlay({map,position:LL(at),content:el,yAnchor:1,zIndex:10,clickable:true});pop.__at=at;pop.__info=info;pop.__open=open;
   if(open){const pt=map.getProjection().containerPointFromCoords(LL(at));if(pt.y<330)map.panBy(0,pt.y-330);}
 }
 function drawNoted(){
@@ -370,7 +436,7 @@ function runSearch(){
       push({nm:p.place_name,ad:short(p.road_address_name||p.address_name),lat,lng});});fin();},{location:loc,radius:AREA_R,sort:S.SortBy.DISTANCE});
 }
 function render(){
-  sugg.innerHTML=sItems.length?sItems.map((it,i)=>`<li data-i="${i}"><div class="nm">${esc(it.nm)}${it.noted?'<span class="tg">заметка</span>':''}</div>${it.ad?`<div class="ad">${esc(it.ad)}</div>`:''}</li>`).join(''):'<li class="none">На участке ничего не найдено</li>';
+  sugg.innerHTML=sItems.length?sItems.map((it,i)=>`<li data-i="${i}"><div class="nm">${esc(it.nm)}${it.noted?`<span class="tg">${tr('tag_note')}</span>`:''}</div>${it.ad?`<div class="ad">${esc(it.ad)}</div>`:''}</li>`).join(''):`<li class="none">${tr('nothing')}</li>`;
   sugg.querySelectorAll('li[data-i]').forEach(li=>li.onclick=()=>pick(sItems[+li.dataset.i]));
 }
 async function pick(it){
@@ -380,12 +446,12 @@ async function pick(it){
 
 /* =================== drawings: model, history =================== */
 const COLORS=['#e8590c','#c92a2a','#f59f00','#2b8a3e','#1f4fd1','#7048e8','#111827','#ffffff'];
-const FONTS=[['sys','Обычный','system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif'],
+const FONTS=[['sys','f_sys','system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif'],
   ['noto','Noto Sans 한글','"Noto Sans KR",system-ui,sans-serif'],['black','Black Han Sans 굵은','"Black Han Sans","Noto Sans KR",sans-serif'],
-  ['jua','Jua 둥근','"Jua","Noto Sans KR",sans-serif'],['pen','Nanum Pen 손글씨','"Nanum Pen Script",cursive'],['mono','Моно 123','ui-monospace,Menlo,Consolas,monospace']];
+  ['jua','Jua 둥근','"Jua","Noto Sans KR",sans-serif'],['pen','Nanum Pen 손글씨','"Nanum Pen Script",cursive'],['mono','f_mono','ui-monospace,Menlo,Consolas,monospace']];
 const FONT_CSS=Object.fromEntries(FONTS.map(f=>[f[0],f[2]]));
-const SHAPES=[['pin','Метка'],['round','Скруглённый'],['rect','Прямоугольник'],['pill','Капсула'],['ellipse','Овал'],['flag','Флажок']];
-const ARROWS=[['plain','Обычная'],['thick','Толстая'],['num','С цифрами от–до'],['chev','Стрелки по линии'],['dash','Штрих-пунктир']];
+const SHAPES=['pin','round','rect','pill','ellipse','flag'].map(k=>[k]);const shapeName=k=>tr('s_'+k);
+const ARROWS=['plain','thick','num','chev','dash'].map(k=>[k]);const arrowName=k=>tr('a_'+k);
 const defFont=()=>({f:'sys',ls:0,vert:false,b:true,i:false,c:'#ffffff',a:1});
 let D=store.get(DRAW_KEY,null);
 if(!D){ // migrate the earlier format (labels + arrows)
@@ -441,12 +507,12 @@ function refreshToolBtns(){
 }
 // what the colour / font panels change: the selected object, the border, or the defaults for new objects
 function colorTarget(){
-  if(sel&&sel.k==='shape')return{name:'фигура',get:()=>({c:sel.fill,a:sel.a}),set:v=>{if(v.c!=null)sel.fill=v.c;if(v.a!=null)sel.a=v.a;}};
-  if(sel&&sel.k==='arrow')return{name:'стрелка',get:()=>({c:sel.c,a:sel.o}),set:v=>{if(v.c!=null)sel.c=v.c;if(v.a!=null)sel.o=v.a;}};
-  if(tool==='zone')return{name:'граница',get:()=>D.zoneStyle,set:v=>Object.assign(D.zoneStyle,v)};
-  return{name:'новые фигуры и стрелки',get:()=>({c:D.def.c,a:D.def.a}),set:v=>{if(v.c!=null)D.def.c=v.c;if(v.a!=null)D.def.a=v.a;}};
+  if(sel&&sel.k==='shape')return{name:tr('tg_shape'),get:()=>({c:sel.fill,a:sel.a}),set:v=>{if(v.c!=null)sel.fill=v.c;if(v.a!=null)sel.a=v.a;}};
+  if(sel&&sel.k==='arrow')return{name:tr('tg_arrow'),get:()=>({c:sel.c,a:sel.o}),set:v=>{if(v.c!=null)sel.c=v.c;if(v.a!=null)sel.o=v.a;}};
+  if(tool==='zone')return{name:tr('tg_zone'),get:()=>D.zoneStyle,set:v=>Object.assign(D.zoneStyle,v)};
+  return{name:tr('tg_new'),get:()=>({c:D.def.c,a:D.def.a}),set:v=>{if(v.c!=null)D.def.c=v.c;if(v.a!=null)D.def.a=v.a;}};
 }
-function fontTarget(){return sel&&sel.k==='shape'?{name:'выбранная фигура',f:sel.font}:{name:'новые фигуры',f:D.def.font};}
+function fontTarget(){return sel&&sel.k==='shape'?{name:tr('tg_selshape'),f:sel.font}:{name:tr('tg_newshape'),f:D.def.font};}
 
 function shapeIcon(form){const m={pin:'<rect x="4" y="3" width="44" height="18" rx="6"/><path d="M22 21l4 6 4-6z"/>',round:'<rect x="4" y="5" width="44" height="20" rx="7"/>',rect:'<rect x="4" y="5" width="44" height="20" rx="1"/>',
   pill:'<rect x="2" y="5" width="48" height="20" rx="10"/>',ellipse:'<ellipse cx="26" cy="15" rx="23" ry="12"/>',flag:'<rect x="8" y="2" width="40" height="16" rx="1"/><rect x="8" y="18" width="2.5" height="11"/>'}[form];
@@ -461,21 +527,21 @@ function arrowIcon(type){const c=D.def.c,h=`<path d="M40 8l9 7-9 7" fill="none" 
 function renderPanel(){
   const f=$('fly');
   if(panel==='shape'){
-    f.innerHTML=`<h3>Фигуры</h3><div class="grid">${SHAPES.map(([k,n])=>`<button class="opt${tool==='shape'&&D.def.shape===k?' on':''}" data-k="${k}">${shapeIcon(k)}${n}</button>`).join('')}</div>
-      <div class="target">Выбери фигуру и нажми на карту. Фигура растёт по ширине вместе с текстом.</div>`;
+    f.innerHTML=`<h3>${tr('shapes')}</h3><div class="grid">${SHAPES.map(([k])=>`<button class="opt${tool==='shape'&&D.def.shape===k?' on':''}" data-k="${k}">${shapeIcon(k)}${shapeName(k)}</button>`).join('')}</div>
+      <div class="target">${tr('shapes_hint')}</div>`;
     f.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{D.def.shape=b.dataset.k;saveD();setTool('shape');openPanel(null);});
   }else if(panel==='arrow'){
-    f.innerHTML=`<h3>Стрелки</h3><div class="grid">${ARROWS.map(([k,n])=>`<button class="opt${tool==='arrow'&&D.def.arrow===k?' on':''}" data-k="${k}">${arrowIcon(k)}${n}</button>`).join('')}</div>`;
+    f.innerHTML=`<h3>${tr('arrows')}</h3><div class="grid">${ARROWS.map(([k])=>`<button class="opt${tool==='arrow'&&D.def.arrow===k?' on':''}" data-k="${k}">${arrowIcon(k)}${arrowName(k)}</button>`).join('')}</div>`;
     f.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{D.def.arrow=b.dataset.k;saveD();setTool('arrow');openPanel(null);});
   }else if(panel==='font'){
     const T=fontTarget(),F=T.f;
-    f.innerHTML=`<h3>Шрифт</h3><div class="target">Меняется: ${T.name}</div>
-     <div class="fonts">${FONTS.map(([k,n,css])=>`<button data-f="${k}" class="${F.f===k?'on':''}" style="font-family:${css.replace(/"/g,'&quot;')}">${n}</button>`).join('')}</div>
-     <div class="seg"><button data-t="b" class="${F.b?'on':''}" style="font-weight:800">Ж</button><button data-t="i" class="${F.i?'on':''}" style="font-style:italic">К</button>
-       <button data-t="h" class="${!F.vert?'on':''}">Обычно</button><button data-t="v" class="${F.vert?'on':''}">Сверху вниз</button></div>
-     <label class="row">Между буквами<input type="range" id="fLs" min="-2" max="12" step="0.5" value="${F.ls}"><b id="fLsV">${F.ls}</b></label>
-     <h3>Цвет текста</h3><div class="sws">${COLORS.map(c=>`<button class="sw${F.c===c?' on':''}" data-c="${c}" style="background:${c}" aria-label="Цвет текста"></button>`).join('')}</div>
-     <label class="row">Прозрачность<input type="range" id="fA" min="10" max="100" step="5" value="${Math.round(F.a*100)}"><b id="fAV">${Math.round(F.a*100)}%</b></label>`;
+    f.innerHTML=`<h3>${tr('font')}</h3><div class="target">${tr('changes',{x:T.name})}</div>
+     <div class="fonts">${FONTS.map(([k,n,css])=>`<button data-f="${k}" class="${F.f===k?'on':''}" style="font-family:${css.replace(/"/g,'&quot;')}">${n.startsWith('f_')?tr(n):n}</button>`).join('')}</div>
+     <div class="seg"><button data-t="b" class="${F.b?'on':''}" style="font-weight:800">${tr('bold')}</button><button data-t="i" class="${F.i?'on':''}" style="font-style:italic">${tr('italic')}</button>
+       <button data-t="h" class="${!F.vert?'on':''}">${tr('horiz')}</button><button data-t="v" class="${F.vert?'on':''}">${tr('vert')}</button></div>
+     <label class="row">${tr('spacing')}<input type="range" id="fLs" min="-2" max="12" step="0.5" value="${F.ls}"><b id="fLsV">${F.ls}</b></label>
+     <h3>${tr('text_color')}</h3><div class="sws">${COLORS.map(c=>`<button class="sw${F.c===c?' on':''}" data-c="${c}" style="background:${c}" aria-label="${tr('text_color')}"></button>`).join('')}</div>
+     <label class="row">${tr('opacity')}<input type="range" id="fA" min="10" max="100" step="5" value="${Math.round(F.a*100)}"><b id="fAV">${Math.round(F.a*100)}%</b></label>`;
     const ch=()=>{saveD();drawAll();};
     f.querySelectorAll('.fonts button').forEach(b=>b.onclick=()=>{snap();F.f=b.dataset.f;ch();renderPanel();});
     f.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{snap();const t=b.dataset.t;if(t==='b')F.b=!F.b;if(t==='i')F.i=!F.i;if(t==='h')F.vert=false;if(t==='v')F.vert=true;ch();renderPanel();});
@@ -484,11 +550,11 @@ function renderPanel(){
     $('fA').oninput=e=>{snap(true);F.a=e.target.value/100;$('fAV').textContent=e.target.value+'%';ch();};
   }else if(panel==='color'){
     const T=colorTarget(),cur=T.get();
-    f.innerHTML=`<h3>Цвет</h3><div class="target">Меняется: ${T.name}</div>
+    f.innerHTML=`<h3>${tr('color')}</h3><div class="target">${tr('changes',{x:T.name})}</div>
      <div class="wheelBox"><canvas id="wheel" width="400" height="400"></canvas><div class="knob" id="knob"></div></div>
-     <label class="row">Яркость<input type="range" id="cV" min="0" max="100" value="100"><b id="cVV">100%</b></label>
-     <div class="sws">${COLORS.map(c=>`<button class="sw${cur.c===c?' on':''}" data-c="${c}" style="background:${c}" aria-label="Цвет"></button>`).join('')}</div>
-     <label class="row">Прозрачность<input type="range" id="cA" min="10" max="100" step="5" value="${Math.round((cur.a==null?1:cur.a)*100)}"><b id="cAV">${Math.round((cur.a==null?1:cur.a)*100)}%</b></label>
+     <label class="row">${tr('bright')}<input type="range" id="cV" min="0" max="100" value="100"><b id="cVV">100%</b></label>
+     <div class="sws">${COLORS.map(c=>`<button class="sw${cur.c===c?' on':''}" data-c="${c}" style="background:${c}" aria-label="${tr('color')}"></button>`).join('')}</div>
+     <label class="row">${tr('opacity')}<input type="range" id="cA" min="10" max="100" step="5" value="${Math.round((cur.a==null?1:cur.a)*100)}"><b id="cAV">${Math.round((cur.a==null?1:cur.a)*100)}%</b></label>
      <div class="prev"><i id="cPrev"></i></div>`;
     colorWheel(T);
   }
@@ -526,18 +592,18 @@ function refreshUI(){
   if(!editing){show($('ctxIsl'),false,'t');return;}
   let hint='',btns=[];
   if(tool==='zone'){
-    hint=`Граница: наведи крестик на угол и нажми «Поставить точку». Точки можно двигать пальцем. Точек: ${D.zone.length}`;
-    btns=[['Поставить точку','pri',()=>{snap();const c=map.getCenter();D.zone.push([r6(c.getLat()),r6(c.getLng())]);saveD();drawAll();refreshUI();}],
-      ['Убрать точку','',()=>{if(!D.zone.length)return;snap();D.zone.pop();saveD();drawAll();refreshUI();}],
-      ...(D.zone.length?[['Стереть','danger',function(){if(this.dataset.sure){snap();D.zone=[];saveD();drawAll();refreshUI();}else{this.dataset.sure=1;this.textContent='Точно стереть?';}}]]:[]),
-      ['Готово','',()=>setTool(null)]];
-  }else if(tool==='shape'){hint=`Нажми на карту, чтобы поставить фигуру «${SHAPES.find(x=>x[0]===D.def.shape)[1]}».`;btns=[['Готово','',()=>setTool(null)]];}
-  else if(tool==='arrow'){hint=arrowStart?'Теперь нажми, куда указывает стрелка.':`Стрелка «${ARROWS.find(x=>x[0]===D.def.arrow)[1]}»: нажми, откуда, потом куда.`;btns=[['Готово','',()=>setTool(null)]];}
-  else if(sel&&sel.k==='shape'){hint='Тяни — переместить. Двумя пальцами — размер. Цвет и шрифт — справа.';
-    btns=[['Текст','',()=>openText(sel,false)],['Удалить','danger',delSel],['Снять выбор','',()=>select(null)]];}
-  else if(sel&&sel.k==='arrow'){hint='Тяни за середину — переместить, за конец — повернуть. Двумя пальцами — толщина.';
-    btns=[...(sel.type==='num'?[['Цифры','',()=>openText(sel,false)]]:[]),['Удалить','danger',delSel],['Снять выбор','',()=>select(null)]];}
-  else hint='Нажми на фигуру или стрелку, чтобы выбрать. Инструменты — справа.';
+    hint=tr('h_zone',{n:D.zone.length});
+    btns=[[tr('put_pt'),'pri',()=>{snap();const c=map.getCenter();D.zone.push([r6(c.getLat()),r6(c.getLng())]);saveD();drawAll();refreshUI();}],
+      [tr('rm_pt'),'',()=>{if(!D.zone.length)return;snap();D.zone.pop();saveD();drawAll();refreshUI();}],
+      ...(D.zone.length?[[tr('erase'),'danger',function(){if(this.dataset.sure){snap();D.zone=[];saveD();drawAll();refreshUI();}else{this.dataset.sure=1;this.textContent=tr('sure_erase');}}]]:[]),
+      [tr('done'),'',()=>setTool(null)]];
+  }else if(tool==='shape'){hint=tr('h_shape',{x:shapeName(D.def.shape)});btns=[[tr('done'),'',()=>setTool(null)]];}
+  else if(tool==='arrow'){hint=arrowStart?tr('h_arrow2'):tr('h_arrow',{x:arrowName(D.def.arrow)});btns=[[tr('done'),'',()=>setTool(null)]];}
+  else if(sel&&sel.k==='shape'){hint=tr('h_selshape');
+    btns=[[tr('text'),'',()=>openText(sel,false)],[tr('del'),'danger',delSel],[tr('unsel'),'',()=>select(null)]];}
+  else if(sel&&sel.k==='arrow'){hint=tr('h_selarrow');
+    btns=[...(sel.type==='num'?[[tr('numbers'),'',()=>openText(sel,false)]]:[]),[tr('del'),'danger',delSel],[tr('unsel'),'',()=>select(null)]];}
+  else hint=tr('h_idle');
   $('ctxHint').textContent=hint;const bx=$('ctxBtns');bx.innerHTML='';
   btns.forEach(([t,c,fn])=>{const b=document.createElement('button');b.textContent=t;if(c)b.className=c;b.onclick=fn;bx.append(b);});
   show($('ctxIsl'),true,'t');
@@ -563,7 +629,7 @@ function editTap(ll){
 /* text / numbers sheet */
 function openText(it,isNew){
   txtCtx={it,isNew};const isNum=it.k==='arrow';
-  $('txtTitle').textContent=isNum?'Цифры на стрелке: от → до':(isNew?'Текст в фигуре':'Изменить текст');
+  $('txtTitle').textContent=isNum?tr('txt_num'):(isNew?tr('txt_new'):tr('txt_edit'));
   $('txtIn').hidden=isNum;$('numRow').hidden=!isNum;$('txtDel').hidden=isNew;
   $('txtIn').value=it.t||'';$('n1').value=it.n1||'';$('n2').value=it.n2||'';
   show($('txtSheet'),true,'b');show($('closeBtn'),false,'b');
@@ -579,15 +645,16 @@ $('txtIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.pre
 
 /* account sheet: backup copy */
 function showAcc(on){show($('accSheet'),on,'b');show($('mainIsl'),!on&&!editing,'b');}
+document.querySelectorAll('#langSeg button').forEach(b=>b.onclick=()=>{LANG=b.dataset.l;store.set('gupo-lang',LANG);applyLang();});
 $('bAcc').onclick=()=>showAcc(true);$('accClose').onclick=()=>showAcc(false);
 $('accExp').onclick=()=>{const blob=new Blob([JSON.stringify({app:'gupo-map',at:Date.now(),notes,draw:D},null,1)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gupo-map-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();msg('Копия сохранена в «Загрузки».',false,3000);};
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gupo-map-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();msg(tr('exp_ok'),false,3000);};
 $('accImp').onclick=()=>$('impFile').click();
 $('impFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(j.app!=='gupo-map')throw 0;
-  notes=j.notes||{};D=Object.assign(D,j.draw||{});store.set(NOTES_KEY,notes);saveD();drawNoted();drawAll();msg('Копия загружена.',false,3000);showAcc(false);}
-  catch(err){msg('Это не файл копии карты.',true,4000);}e.target.value='';};
-$('accClear').onclick=function(){if(this.dataset.sure){snap();D.items=[];saveD();drawAll();delete this.dataset.sure;this.textContent='Удалить все рисунки';msg('Рисунки удалены. Вернуть можно кнопкой «Назад» в режиме рисования.',false,4000);}
-  else{this.dataset.sure=1;this.textContent='Точно удалить? Нажми ещё раз';}};
+  notes=j.notes||{};D=Object.assign(D,j.draw||{});store.set(NOTES_KEY,notes);saveD();drawNoted();drawAll();msg(tr('imp_ok'),false,3000);showAcc(false);}
+  catch(err){msg(tr('imp_bad'),true,4000);}e.target.value='';};
+$('accClear').onclick=function(){if(this.dataset.sure){snap();D.items=[];saveD();drawAll();delete this.dataset.sure;this.textContent=tr('acc_clear');msg(tr('cleared'),false,4000);}
+  else{this.dataset.sure=1;this.textContent=tr('sure_del');}};
 
 /* =================== rendering =================== */
 const elOf=new WeakMap(),ovOf=new Map(),objsOf=new Map();let zoneShape=null,vtx=[];
@@ -717,7 +784,7 @@ function resizeSel(v){
   if(sel.k==='shape'){sel.s=+Math.max(.5,Math.min(4,v)).toFixed(2);const ov=ovOf.get(sel.id),el=ov&&ov.getContent?ov.getContent():document.querySelector('.shp.sel');if(el)el.style.fontSize=(14*sel.s).toFixed(1)+'px';}
   else{sel.w=+Math.max(2,Math.min(30,v)).toFixed(1);drawItem(sel);}
 }
-updHist();refreshToolBtns();
+updHist();applyLang();
 </script>
 </body>
 </html>
