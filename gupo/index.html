@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Участок Гупо-дон</title>
+<style>
+:root{--bg:#eef1f4;--panel:#fff;--ink:#18212b;--muted:#5b6672;--line:#d5dbe1;--accent:#1f4fd1;--route:#e8590c;--done:#2b8a3e}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;font-size:14px}
+.bar{background:var(--panel);border-bottom:1px solid var(--line);padding:max(8px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:7px;z-index:5}
+h1{margin:0;font-size:16px}
+.sub{color:var(--muted);font-size:12px;font-weight:400;margin-left:6px}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 11px;cursor:pointer}
+button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+button.sq{border-radius:8px;padding:7px 10px}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-width:0}
+.search{display:flex;gap:6px}.search input{flex:1}
+.hint{font-size:12.5px;color:var(--muted);min-height:16px}
+.hint.err{color:#c92a2a}
+#map{flex:1;min-height:0}
+.sheet{max-height:32%;overflow:auto;background:var(--panel);border-top:1px solid var(--line);padding:8px max(12px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.sheet h2{margin:0 0 6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+li{display:grid;grid-template-columns:28px 1fr auto auto;gap:6px;align-items:center}
+.num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;cursor:pointer}
+li.done .num{background:var(--done)} li.done input{text-decoration:line-through;color:var(--muted)}
+.pin{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;border:3px solid #fff;font:700 13px system-ui;display:grid;place-items:center;box-shadow:0 1px 5px rgba(0,0,0,.45);transform:translateY(-2px)}
+.pin.done{background:var(--done)}
+.me{width:18px;height:18px;border-radius:50%;background:#e03131;border:3px solid #fff;box-shadow:0 0 0 6px rgba(224,49,49,.25)}
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>Участок Гупо-дон<span class="sub">구포동 · 북구 · 부산</span></h1>
+  <div class="search"><input id="q" placeholder="Адрес посылки: 시랑로 115" enterkeyhint="search"><button class="sq" id="find">Отметить</button></div>
+  <div class="row" id="modes">
+    <button data-m="view" class="on">Смотреть</button>
+    <button data-m="route">Маршрут</button>
+    <button data-m="stop">Посылка</button>
+    <button data-m="zone">Граница</button>
+  </div>
+  <div class="row">
+    <button class="sq" id="undo">Отменить</button>
+    <button class="sq" id="me">Где я</button>
+    <button class="sq" id="fitBtn">Весь участок</button>
+    <span id="clearWrap"></span>
+  </div>
+  <div class="hint" id="hint">Загружаю KakaoMap…</div>
+</div>
+<div id="map"></div>
+<div class="sheet"><h2><span>Посылки</span><span id="count"></span></h2><ul id="list"></ul></div>
+
+<script>
+const APPKEY='53f83a531954055ca29efd3e8a0d1a45';
+const KEY='gupo-kakao-v1';
+// Territory outline in pixel coords of the stitched KakaoMap screenshots + landmarks for calibration
+const POLY_PX=[[2732,2153],[2777,2047],[2769,2002],[2752,1981],[2709,1908],[2665,1824],[2615,1747],[2517,1653],[2374,1568],[2203,1501],[2016,1449],[1850,1410],[1744,1394],[1689,1394],[1588,1403],[1513,1400],[1409,1372],[1282,1301],[1168,1194],[1077,1073],[994,970],[919,900],[852,845],[795,794],[758,747],[733,698],[708,632],[689,551],[694,472],[714,400],[734,344],[751,307],[741,267],[642,194],[456,113],[266,77],[126,88],[52,106],[35,118],[51,209],[66,273],[106,391],[228,791],[339,1140],[359,1210],[391,1363],[406,1411],[432,1461],[495,1542],[569,1656],[799,2032],[836,2081],[861,2106],[898,2127],[1221,2242],[1360,2281],[1426,2288],[1469,2284],[1508,2272],[1814,2138],[1893,2100],[1933,2092],[1992,2096],[2088,2118],[2228,2181],[2250,2201],[2266,2221],[2330,2323],[2354,2337],[2442,2341],[2599,2280]];
+const LANDMARKS=[['포천초등학교',1100,1915],['신천초등학교',1015,1080],['구포대우아파트',1410,1455],['백양체육공원',2400,1890],['벽산그린필드1차아파트',1670,1665],['시랑어린이공원',445,555],['포천어린이공원',1250,1855]];
+const HINTS={view:'Двигай и приближай карту пальцами. Пунктир — граница участка.',
+ route:'Тыкай по улицам по порядку объезда — нарисуется маршрут.',
+ stop:'Тыкай на дом — поставится посылка. Адрес впиши в списке внизу.',
+ zone:'Перерисовка границы: тыкай по углам участка по кругу. Первое касание стирает старую границу.'};
+let S={zone:null,route:[],stops:[]};
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};
+const $=id=>document.getElementById(id);
+const hint=(t,err)=>{$('hint').textContent=t;$('hint').className='hint'+(err?' err':'');};
+let mode='view',zoneFresh=false;
+
+const sdk=document.createElement('script');
+sdk.src='https://dapi.kakao.com/v2/maps/sdk.js?appkey='+APPKEY+'&libraries=services&autoload=false';
+sdk.onload=()=>kakao.maps.load(init);
+sdk.onerror=()=>hint('KakaoMap не загрузился. Проверь интернет и что адрес сайта добавлен в Kakao Developers (플랫폼 키 → JavaScript SDK 도메인).',true);
+document.head.appendChild(sdk);
+setTimeout(()=>{if(!window.kakao||!kakao.maps||!kakao.maps.Map)hint('KakaoMap не отвечает. Проверь: включён ли 카카오맵 в Kakao Developers и добавлен ли адрес сайта в JavaScript SDK 도메인.',true);},8000);
+
+let map,geocoder,places,zonePoly,routeLine,overlays=[],meOv=null;
+const LL=(p)=>new kakao.maps.LatLng(p[0],p[1]);
+
+function init(){
+  map=new kakao.maps.Map($('map'),{center:new kakao.maps.LatLng(35.2075,129.0065),level:4});
+  map.addControl(new kakao.maps.ZoomControl(),kakao.maps.ControlPosition.RIGHT);
+  geocoder=new kakao.maps.services.Geocoder();places=new kakao.maps.services.Places();
+  zonePoly=new kakao.maps.Polygon({map,path:[],strokeWeight:4,strokeColor:'#1f4fd1',strokeStyle:'dash',strokeOpacity:.95,fillColor:'#1f4fd1',fillOpacity:.06});
+  routeLine=new kakao.maps.Polyline({map,path:[],strokeWeight:6,strokeColor:'#e8590c',strokeOpacity:.85,endArrow:true});
+  kakao.maps.event.addListener(map,'click',e=>onTap(e.latLng));
+  draw();
+  if(S.zone&&S.zone.length>2){fitZone();hint(HINTS.view);}
+  else calibrate();
+}
+
+// Fit affine pixel→(lat,lng) from landmarks found by Kakao keyword search
+function calibrate(){
+  hint('Строю границу участка по ориентирам…');
+  const center=new kakao.maps.LatLng(35.2075,129.0065);
+  const found=[];let left=LANDMARKS.length;
+  LANDMARKS.forEach(([name,x,y])=>{
+    places.keywordSearch(name,(res,st)=>{
+      if(st===kakao.maps.services.Status.OK&&res[0])found.push({x,y,lat:+res[0].y,lng:+res[0].x,name});
+      if(--left===0)finishCal(found);
+    },{location:center,radius:4000});
+  });
+}
+function lsq(rows,vals){ // solve 3-param least squares via normal equations
+  const A=[[0,0,0],[0,0,0],[0,0,0]],b=[0,0,0];
+  rows.forEach((r,i)=>{for(let j=0;j<3;j++){b[j]+=r[j]*vals[i];for(let k=0;k<3;k++)A[j][k]+=r[j]*r[k];}});
+  const M=A.map((r,i)=>[...r,b[i]]);
+  for(let i=0;i<3;i++){let p=i;for(let r=i+1;r<3;r++)if(Math.abs(M[r][i])>Math.abs(M[p][i]))p=r;[M[i],M[p]]=[M[p],M[i]];
+    for(let r=0;r<3;r++)if(r!==i){const f=M[r][i]/M[i][i];for(let c=i;c<4;c++)M[r][c]-=f*M[i][c];}}
+  return [M[0][3]/M[0][0],M[1][3]/M[1][1],M[2][3]/M[2][2]];
+}
+function fit(pts){const R=pts.map(p=>[p.x,p.y,1]);return{la:lsq(R,pts.map(p=>p.lat)),ln:lsq(R,pts.map(p=>p.lng))};}
+function apply(T,x,y){return[T.la[0]*x+T.la[1]*y+T.la[2],T.ln[0]*x+T.ln[1]*y+T.ln[2]];}
+function finishCal(pts){
+  if(pts.length<3){hint('Не получилось найти ориентиры. Нарисуй границу сам: режим «Граница».',true);return;}
+  let T=fit(pts);
+  // drop the worst outlier while it is clearly off (>60 m)
+  for(let it=0;it<2&&pts.length>3;it++){
+    const err=pts.map(p=>{const q=apply(T,p.x,p.y);return Math.hypot((q[0]-p.lat)*111000,(q[1]-p.lng)*91000);});
+    const w=err.indexOf(Math.max(...err));if(err[w]<60)break;pts.splice(w,1);T=fit(pts);
+  }
+  S.zone=POLY_PX.map(([x,y])=>apply(T,x,y).map(v=>+v.toFixed(6)));save();draw();fitZone();
+  hint('Граница построена по ориентирам. Если где-то не так — режим «Граница», и обведи заново.');
+}
+function fitZone(){if(!S.zone||!S.zone.length)return;const b=new kakao.maps.LatLngBounds();S.zone.forEach(p=>b.extend(LL(p)));map.setBounds(b,20,20,20,20);}
+$('fitBtn').onclick=()=>map&&fitZone();
+
+document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>{mode=b.dataset.m;zoneFresh=mode==='zone';
+  document.querySelectorAll('#modes button').forEach(x=>x.classList.toggle('on',x===b));hint(HINTS[mode]);});
+
+function onTap(ll){const p=[+ll.getLat().toFixed(6),+ll.getLng().toFixed(6)];
+  if(mode==='route')S.route.push(p);
+  else if(mode==='stop'){S.stops.push({p,a:'',d:false});setTimeout(()=>{const ins=document.querySelectorAll('#list input');ins[ins.length-1]?.focus();},60);
+    geocoder.coord2Address(p[1],p[0],(r,st)=>{if(st===kakao.maps.services.Status.OK&&r[0]){const s=S.stops[S.stops.length-1];if(s&&!s.a){s.a=(r[0].road_address||r[0].address).address_name.replace(/^부산\S*\s+북구\s+/,'');save();draw();}}});}
+  else if(mode==='zone'){if(zoneFresh){S.zone=[];zoneFresh=false;}S.zone.push(p);}
+  else return;
+  save();draw();}
+
+$('undo').onclick=()=>{if(mode==='zone'&&S.zone)S.zone.pop();else if(mode==='route')S.route.pop();else S.stops.pop();save();draw();};
+function clearBtn(){$('clearWrap').innerHTML='<button class="sq" id="clr">Очистить…</button>';$('clr').onclick=()=>{
+  $('clearWrap').innerHTML='Стереть: <button class="sq" id="c1">посылки</button> <button class="sq" id="c2">маршрут</button> <button class="sq" id="c0">отмена</button>';
+  $('c1').onclick=()=>{S.stops=[];save();draw();clearBtn();};$('c2').onclick=()=>{S.route=[];save();draw();clearBtn();};$('c0').onclick=clearBtn;};}
+clearBtn();
+
+$('me').onclick=()=>{if(!navigator.geolocation){hint('Телефон не даёт геолокацию.',true);return;}
+  navigator.geolocation.getCurrentPosition(pos=>{const ll=new kakao.maps.LatLng(pos.coords.latitude,pos.coords.longitude);
+    if(meOv)meOv.setMap(null);meOv=new kakao.maps.CustomOverlay({map,position:ll,content:'<div class="me"></div>',zIndex:5});map.setCenter(ll);map.setLevel(2);},
+  ()=>hint('Нет доступа к геолокации. Разреши её браузеру.',true),{enableHighAccuracy:true,timeout:10000});};
+
+function addByAddress(q){
+  const full=/부산/.test(q)?q:'부산 북구 '+q;
+  hint('Ищу «'+q+'»…');
+  const done=(lat,lng,label)=>{S.stops.push({p:[+(+lat).toFixed(6),+(+lng).toFixed(6)],a:q,d:false});save();draw();map.setCenter(new kakao.maps.LatLng(lat,lng));map.setLevel(2);hint('Отмечено: '+label);$('q').value='';};
+  geocoder.addressSearch(full,(r,st)=>{
+    if(st===kakao.maps.services.Status.OK&&r[0])return done(r[0].y,r[0].x,r[0].address_name);
+    places.keywordSearch(q,(r2,st2)=>{
+      if(st2===kakao.maps.services.Status.OK&&r2[0])return done(r2[0].y,r2[0].x,r2[0].place_name);
+      hint('Адрес не найден. Режим «Посылка» → тыкни дом на карте.',true);
+    },{location:map.getCenter(),radius:3000});
+  });
+}
+$('find').onclick=()=>{const q=$('q').value.trim();if(q&&map)addByAddress(q);};
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')$('find').click();});
+
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function draw(){
+  if(map){
+    zonePoly.setPath((S.zone||[]).map(LL));
+    routeLine.setPath(S.route.map(LL));
+    overlays.forEach(o=>o.setMap(null));overlays=[];
+    S.stops.forEach((s,i)=>{if(!s.p)return;overlays.push(new kakao.maps.CustomOverlay({map,position:LL(s.p),zIndex:3,
+      content:`<div class="pin ${s.d?'done':''}" title="${esc(s.a)}">${i+1}</div>`}));});
+  }
+  const L2=$('list');L2.innerHTML='';
+  if(!S.stops.length)L2.innerHTML='<li style="display:block;color:var(--muted)">Пока пусто. Впиши адрес вверху или режим «Посылка» → тыкни дом.</li>';
+  S.stops.forEach((s,i)=>{const li=document.createElement('li');if(s.d)li.className='done';
+    li.innerHTML=`<span class="num" title="Показать на карте">${i+1}</span><input id="st${i}" placeholder="Адрес" aria-label="Адрес посылки ${i+1}"><button class="sq" aria-label="Доставлено">${s.d?'↺':'✓'}</button><button class="sq" aria-label="Удалить">✕</button>`;
+    const inp=li.querySelector('input');inp.value=s.a;inp.oninput=()=>{s.a=inp.value;save();};
+    li.querySelector('.num').onclick=()=>{if(s.p&&map){map.setCenter(LL(s.p));map.setLevel(2);}};
+    const [ok,del]=li.querySelectorAll('button');ok.onclick=()=>{s.d=!s.d;save();draw();};del.onclick=()=>{S.stops.splice(i,1);save();draw();};
+    L2.append(li);});
+  const d=S.stops.filter(s=>s.d).length;$('count').textContent=S.stops.length?`${d} / ${S.stops.length} доставлено`:'';
+}
+draw();
+</script>
+</body>
+</html>
