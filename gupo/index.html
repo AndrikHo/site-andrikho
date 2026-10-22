@@ -5,9 +5,32 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Участок Гупо-дон</title>
 <style>
+:root{--ink:#18212b;--muted:#5b6672;--line:#dde2e8;--accent:#1f4fd1;--note:#e8590c}
 html,body{height:100%;margin:0;background:#eef1f4}
+body{font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink)}
 #map{position:fixed;inset:0}
-#msg{position:fixed;left:12px;right:12px;top:max(12px,env(safe-area-inset-top));font:14px system-ui,sans-serif;color:#c92a2a;background:#fff;padding:10px 12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:10}
+#msg{position:fixed;left:12px;right:12px;top:max(12px,env(safe-area-inset-top));font-size:13px;color:var(--muted);background:#fff;padding:8px 12px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:10}
+#msg.err{color:#c92a2a}
+.pop{position:relative;width:min(300px,calc(100vw - 40px));background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.25);margin-bottom:14px;font-size:14px;overflow:hidden}
+.pop:after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-8px;border:8px solid transparent;border-bottom:0;border-top-color:#fff}
+.pop .x{position:absolute;top:6px;right:6px;width:30px;height:30px;border:0;background:none;font-size:18px;color:var(--muted);cursor:pointer}
+.head{display:block;width:100%;text-align:left;border:0;background:none;padding:12px 40px 10px 14px;cursor:pointer;font:inherit;color:inherit}
+.head .new{font-weight:700;font-size:15px;line-height:1.3}
+.head .bld{font-weight:400;color:var(--muted)}
+.head .old{color:var(--muted);font-size:13px;margin-top:3px}
+.head .more{color:var(--accent);font-size:12.5px;margin-top:6px}
+.lbl{display:inline-block;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:6px;vertical-align:1px}
+.lbl.n{background:#e7edff;color:#1f4fd1}.lbl.o{background:#eef0f2;color:#5b6672}
+.body{border-top:1px solid var(--line);padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px}
+.notes{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto}
+.note{background:#fff6ee;border:1px solid #ffd8bd;border-radius:8px;padding:7px 9px;display:grid;grid-template-columns:1fr auto;gap:4px}
+.note .t{white-space:pre-wrap;word-break:break-word}
+.note .d{grid-column:1/2;font-size:11px;color:var(--muted)}
+.note button{grid-row:1/3;grid-column:2;border:0;background:none;color:var(--muted);font-size:15px;cursor:pointer}
+.empty{color:var(--muted);font-size:13px}
+textarea{font:inherit;font-size:15px;border:1px solid var(--line);border-radius:8px;padding:8px;resize:none;min-height:56px;width:100%;box-sizing:border-box}
+.add{align-self:flex-end;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;border-radius:8px;padding:8px 14px;cursor:pointer}
+button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -15,18 +38,120 @@ html,body{height:100%;margin:0;background:#eef1f4}
 <div id="msg" hidden></div>
 <script>
 const APPKEY='53f83a531954055ca29efd3e8a0d1a45';
-const fail=t=>{const m=document.getElementById('msg');m.textContent=t;m.hidden=false;};
+const NOTES_KEY='gupo-notes-v1', BLD_KEY='gupo-bld-v1:';
+const msgEl=document.getElementById('msg');
+let msgT;function msg(t,err,ms){msgEl.textContent=t;msgEl.className=err?'err':'';msgEl.hidden=false;clearTimeout(msgT);if(ms)msgT=setTimeout(()=>msgEl.hidden=true,ms);}
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const short=a=>(a||'').replace(/^부산(광역시)?\s+북구\s+/,'');
+
 const s=document.createElement('script');
 s.src='https://dapi.kakao.com/v2/maps/sdk.js?appkey='+APPKEY+'&libraries=services&autoload=false';
-s.onload=()=>kakao.maps.load(()=>{
-  const map=new kakao.maps.Map(document.getElementById('map'),{center:new kakao.maps.LatLng(35.2075,129.0065),level:4});
-  // center on the territory (포천초등학교 is in the middle of it)
+s.onload=()=>kakao.maps.load(init);
+s.onerror=()=>msg('KakaoMap не загрузился. Проверь интернет.',true);
+document.head.appendChild(s);
+
+let map,geocoder,hl=null,pop=null,noteShapes=[];
+let notes=store.get(NOTES_KEY,{});        // key -> {nw,old,bld,path,notes:[{t,at}]}
+const buildings=new Map();               // osm id -> {path:[[lat,lng]], bb:[minLat,minLng,maxLat,maxLng]}
+const tilesDone=new Set(),tilesLoading=new Set();
+
+function init(){
+  map=new kakao.maps.Map(document.getElementById('map'),{center:new kakao.maps.LatLng(35.2075,129.0065),level:3});
+  geocoder=new kakao.maps.services.Geocoder();
   new kakao.maps.services.Places().keywordSearch('포천초등학교',(r,st)=>{
     if(st===kakao.maps.services.Status.OK&&r[0])map.setCenter(new kakao.maps.LatLng(r[0].y,r[0].x));
   },{location:map.getCenter(),radius:5000});
-});
-s.onerror=()=>fail('KakaoMap не загрузился. Проверь интернет.');
-document.head.appendChild(s);
+  kakao.maps.event.addListener(map,'click',e=>onTap(e.latLng));
+  kakao.maps.event.addListener(map,'idle',loadVisible);
+  drawNoted();
+  msg('Нажми на дом, чтобы увидеть адрес и заметки.',false,5000);
+}
+
+// ---------- building outlines from OpenStreetMap (cached per ~550 m tile) ----------
+const T=0.005;
+function tileKeys(b){const sw=b.getSouthWest(),ne=b.getNorthEast(),ks=[];
+  for(let y=Math.floor(sw.getLat()/T);y<=Math.floor(ne.getLat()/T);y++)for(let x=Math.floor(sw.getLng()/T);x<=Math.floor(ne.getLng()/T);x++)ks.push(y+'_'+x);return ks;}
+function addWays(ways){ways.forEach(w=>{if(buildings.has(w.id))return;const path=w.g;let a=90,b=180,c=-90,d=-180;
+  path.forEach(([la,ln])=>{a=Math.min(a,la);b=Math.min(b,ln);c=Math.max(c,la);d=Math.max(d,ln);});buildings.set(w.id,{path,bb:[a,b,c,d]});});}
+async function fetchTile(k){
+  const cached=store.get(BLD_KEY+k,null);
+  if(cached&&Date.now()-cached.at<30*864e5){addWays(cached.w);tilesDone.add(k);return;}
+  const [y,x]=k.split('_').map(Number),bbox=[y*T,x*T,(y+1)*T,(x+1)*T].map(v=>v.toFixed(4)).join(',');
+  const q=`[out:json][timeout:25];way["building"](${bbox});out geom;`;
+  for(const ep of['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter']){
+    try{const r=await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+      if(!r.ok)continue;const j=await r.json();
+      const w=j.elements.filter(e=>e.geometry).map(e=>({id:e.id,g:e.geometry.map(p=>[+p.lat.toFixed(6),+p.lon.toFixed(6)])}));
+      addWays(w);store.set(BLD_KEY+k,{at:Date.now(),w});tilesDone.add(k);return;}catch(e){}
+  }
+  throw new Error('osm');
+}
+async function loadVisible(){
+  if(map.getLevel()>4)return;
+  const ks=tileKeys(map.getBounds()).filter(k=>!tilesDone.has(k)&&!tilesLoading.has(k));
+  if(!ks.length)return;
+  ks.forEach(k=>tilesLoading.add(k));
+  const r=await Promise.allSettled(ks.map(fetchTile));ks.forEach(k=>tilesLoading.delete(k));
+  if(r.some(x=>x.status==='rejected'))msg('Контуры домов загрузились не везде. Дом всё равно можно выбрать, просто без контура.',true,5000);
+}
+function inPoly(lat,lng,path){let ins=false;for(let i=0,j=path.length-1;i<path.length;j=i++){const [yi,xi]=path[i],[yj,xj]=path[j];
+  if((yi>lat)!==(yj>lat)&&lng<(xj-xi)*(lat-yi)/(yj-yi)+xi)ins=!ins;}return ins;}
+function buildingAt(lat,lng){let best=null,area=1e9;
+  for(const b of buildings.values()){const[a,c,d,e]=b.bb;if(lat<a||lat>d||lng<c||lng>e)continue;
+    if(inPoly(lat,lng,b.path)){const ar=(d-a)*(e-c);if(ar<area){area=ar;best=b;}}}return best;}
+function center(path){let la=0,ln=0;path.forEach(p=>{la+=p[0];ln+=p[1];});return[la/path.length,ln/path.length];}
+
+// ---------- tap → highlight + popup ----------
+function clearSel(){if(hl){hl.setMap(null);hl=null;}if(pop){pop.setMap(null);pop=null;}}
+function onTap(ll){
+  clearSel();
+  const lat=ll.getLat(),lng=ll.getLng(),b=buildingAt(lat,lng);
+  const path=b?b.path:null;
+  if(path){hl=new kakao.maps.Polygon({map,path:path.map(p=>new kakao.maps.LatLng(p[0],p[1])),strokeWeight:3,strokeColor:'#1f4fd1',strokeOpacity:1,fillColor:'#1f4fd1',fillOpacity:.25,zIndex:4});}
+  else{hl=new kakao.maps.Circle({map,center:ll,radius:6,strokeWeight:3,strokeColor:'#1f4fd1',fillColor:'#1f4fd1',fillOpacity:.25,zIndex:4});}
+  const at=path?center(path):[lat,lng];
+  geocoder.coord2Address(lng,lat,(r,st)=>{
+    if(st!==kakao.maps.services.Status.OK||!r[0]){showPop(at,{nw:'',old:'Адрес не найден',bld:'',path});return;}
+    const ra=r[0].road_address,ad=r[0].address;
+    showPop(at,{nw:ra?short(ra.address_name):'',bld:ra&&ra.building_name||'',old:ad?short(ad.address_name):'',path});
+  });
+}
+function keyOf(info){return info.old||info.nw||('pt:'+(info.path?center(info.path).join(','):''));}
+function showPop(at,info,open){
+  if(pop)pop.setMap(null);
+  const k=keyOf(info),rec=notes[k],list=rec?rec.notes:[];
+  const el=document.createElement('div');el.className='pop';
+  el.innerHTML=`<button class="x" aria-label="Закрыть">✕</button>
+   <button class="head" aria-expanded="${!!open}">
+     ${info.nw?`<div class="new"><span class="lbl n">도로명</span>${esc(info.nw)}${info.bld?` <span class="bld">${esc(info.bld)}</span>`:''}</div>`:''}
+     <div class="old"><span class="lbl o">지번</span>${esc(info.old||'—')}</div>
+     <div class="more">${open?'Свернуть ▲':(list.length?`Заметки: ${list.length} ▼`:'Добавить заметку ▼')}</div>
+   </button>
+   ${open?`<div class="body"><div class="notes">${list.length?list.map((n,i)=>`<div class="note"><div class="t">${esc(n.t)}</div><div class="d">${new Date(n.at).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div><button data-i="${i}" aria-label="Удалить заметку">✕</button></div>`).join(''):'<div class="empty">Заметок пока нет.</div>'}</div>
+     <textarea id="nt" placeholder="Например: код двери 1234#, оставлять у охраны"></textarea>
+     <button class="add">Сохранить</button></div>`:''}`;
+  ['click','mousedown','touchstart','touchend','dblclick','wheel'].forEach(ev=>el.addEventListener(ev,e=>e.stopPropagation()));
+  el.querySelector('.x').onclick=clearSel;
+  el.querySelector('.head').onclick=()=>showPop(at,info,!open);
+  if(open){
+    el.querySelector('.add').onclick=()=>{const t=el.querySelector('#nt').value.trim();if(!t)return;
+      notes[k]=notes[k]||{nw:info.nw,old:info.old,bld:info.bld,path:info.path,at,notes:[]};notes[k].notes.push({t,at:Date.now()});store.set(NOTES_KEY,notes);drawNoted();showPop(at,info,true);};
+    el.querySelectorAll('.note button').forEach(b=>b.onclick=()=>{notes[k].notes.splice(+b.dataset.i,1);if(!notes[k].notes.length)delete notes[k];store.set(NOTES_KEY,notes);drawNoted();showPop(at,info,true);});
+  }
+  pop=new kakao.maps.CustomOverlay({map,position:new kakao.maps.LatLng(at[0],at[1]),content:el,yAnchor:1,zIndex:10,clickable:true});
+  if(open){const pt=map.getProjection().containerPointFromCoords(new kakao.maps.LatLng(at[0],at[1]));if(pt.y<330)map.panBy(0,pt.y-330);}
+}
+
+// ---------- houses with notes are tinted orange ----------
+function drawNoted(){
+  if(!map)return;noteShapes.forEach(s=>s.setMap(null));noteShapes=[];
+  Object.values(notes).forEach(r=>{
+    const o={map,strokeWeight:2,strokeColor:'#e8590c',fillColor:'#e8590c',fillOpacity:.3,zIndex:3};
+    noteShapes.push(r.path?new kakao.maps.Polygon({...o,path:r.path.map(p=>new kakao.maps.LatLng(p[0],p[1]))})
+      :new kakao.maps.Circle({...o,center:new kakao.maps.LatLng(r.at[0],r.at[1]),radius:6}));
+  });
+}
 </script>
 </body>
 </html>
