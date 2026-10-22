@@ -53,7 +53,7 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
 #fab{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 12px);z-index:22;width:58px;height:58px;border-radius:50%;border:0;background:rgba(31,79,209,.88);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer;display:grid;place-items:center;transition:transform .2s}
 #fab svg{width:26px;height:26px}
 #fab.open{transform:rotate(45deg)}
-#fab .dot{position:absolute;right:3px;bottom:3px;width:16px;height:16px;border-radius:50%;border:2px solid #fff;transform:rotate(-45deg)}
+#fab .unused{position:absolute;right:3px;bottom:3px;width:16px;height:16px;border-radius:50%;border:2px solid #fff;transform:rotate(-45deg)}
 #menu{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 82px);z-index:22;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
 #menu[hidden]{display:none}
 .mi{display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;cursor:pointer;font:inherit}
@@ -69,6 +69,15 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
 .sub.list button{border:0;background:none;font:inherit;font-size:14px;text-align:left;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--ink)}
 .sub.list button:hover{background:rgba(0,0,0,.05)}
 .sub.list button.danger{color:#c92a2a}
+.style{display:flex;flex-direction:column;gap:8px}
+.style .sws{display:flex;gap:8px;flex-wrap:wrap}
+.style .sw{width:30px;height:30px;border-radius:50%!important;padding:0!important;border:3px solid #fff!important;box-shadow:0 0 0 1px #ccd}
+.style .sw.on{box-shadow:0 0 0 3px #18212b}
+.style label{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.style input[type=range]{flex:1;min-width:0;accent-color:#1f4fd1}
+.style b{min-width:38px;text-align:right;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.style .pv{height:6px;border-radius:3px;flex:0 0 26px}
+#tsheet .th{font-size:13px;color:var(--muted)}
 .op{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:8px 12px 10px;font-size:14px;color:var(--ink);border-bottom:1px solid rgba(0,0,0,.08);margin-bottom:2px}
 .op b{color:var(--muted);font-weight:600}
 .op input{width:100%;accent-color:#1f4fd1}
@@ -102,10 +111,7 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
 <div id="menu" hidden>
   <button class="mi" id="mText"><span>Текст или цифры</span><i>T</i></button>
   <button class="mi" id="mArrow"><span>Стрелка</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 19 5M10 5h9v9"/></svg></i></button>
-  <div class="sub" id="colorSub" hidden></div>
-  <button class="mi" id="mColor"><span>Цвет</span><i><b id="mColorDot" style="width:24px;height:24px;border-radius:50%;display:block"></b></i></button>
   <div class="sub list" id="moreSub" hidden>
-    <label class="op">Прозрачность рисунков <b id="opVal"></b><input type="range" id="opRange" min="15" max="100" step="5" aria-label="Прозрачность рисунков"></label>
     <button id="mUndo">Отменить последнее</button>
     <button id="mHide">Скрыть рисунки</button>
     <button id="mClear" class="danger">Удалить все надписи и стрелки</button>
@@ -113,9 +119,9 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
   <button class="mi" id="mMore"><span>Ещё</span><i>⋯</i></button>
   <button class="mi" id="mZone"><span>Граница участка</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-dasharray="3 2.4"><path d="M4 7 11 3l9 5-2 11-12 2z"/></svg></i></button>
 </div>
-<button id="fab" aria-label="Меню рисования" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><b class="dot" id="fabDot"></b></button>
-<div id="toolbar" hidden><div class="th" id="tHint"></div><div class="tb" id="tBtns"></div></div>
-<div id="tsheet" hidden><input id="tIn" placeholder="Текст или цифры" enterkeyhint="done" maxlength="40"><div class="tb"><button class="danger" id="tDel">Удалить</button><button id="tCancel">Отмена</button><button class="pri" id="tOk">Готово</button></div></div>
+<button id="fab" aria-label="Меню рисования" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+<div id="toolbar" hidden><div class="th" id="tHint"></div><div class="style" id="tStyle"></div><div class="tb" id="tBtns"></div></div>
+<div id="tsheet" hidden><div class="th" id="sTitle"></div><input id="tIn" placeholder="Текст или цифры" enterkeyhint="done" maxlength="40"><div class="style" id="sStyle"></div><div class="tb"><button class="danger" id="tDel">Удалить</button><button id="tCancel">Отмена</button><button class="pri" id="tOk">Готово</button></div></div>
 <div id="msg" hidden></div>
 <script>
 const APPKEY='53f83a531954055ca29efd3e8a0d1a45';
@@ -186,6 +192,8 @@ function center(path){let la=0,ln=0;path.forEach(p=>{la+=p[0];ln+=p[1];});return
 // ---------- tap → highlight + popup ----------
 function clearSel(){if(hl){hl.setMap(null);hl=null;}if(pop){pop.setMap(null);pop=null;}}
 function onTap(ll){
+  if(Date.now()-shapeHit<400)return;
+  if(!document.getElementById('tsheet').hidden){document.getElementById('tCancel').click();return;}
   if(sbar.classList.contains('open')){openSearch(false);return;}
   if(!menu.hidden){showMenu(false);return;}
   if(tool){toolTap(ll);return;}
@@ -263,34 +271,41 @@ async function pick(it){
   if(tool)setTool(null);showMenu(false);onTap(ll);
 }
 
-// ---------- drawing: text labels, arrows, colour, territory border ----------
-const DRAW_KEY='gupo-draw-v1',COLORS=['#e8590c','#c92a2a','#1f4fd1','#2b8a3e','#7048e8','#111827'];
-let D=Object.assign({color:'#e8590c',labels:[],arrows:[],zone:[],hidden:false,alpha:1},store.get(DRAW_KEY,{}));
+// ---------- drawing: text labels, arrows, territory border (each with own colour + opacity) ----------
+const DRAW_KEY='gupo-draw-v1',COLORS=['#e8590c','#c92a2a','#1f4fd1','#2b8a3e','#7048e8','#111827','#ffffff'];
+let D=Object.assign({labels:[],arrows:[],zone:[],hidden:false},store.get(DRAW_KEY,{}));
+D.tools=Object.assign({text:{c:'#e8590c',a:1},arrow:{c:'#c92a2a',a:1},zone:{c:'#1f4fd1',a:1}},D.tools||{});
+if(D.color&&!store.get(DRAW_KEY,{}).tools){D.tools.text.c=D.tools.arrow.c=D.color;}
 const saveD=()=>store.set(DRAW_KEY,D),undoStack=[];
-let tool=null,arrowStart=null,arrowTmp=null,drawn=[],zoneShape=null,vtx=[],editLabel=null;
+let shapeHit=0,tool=null,arrowStart=null,arrowTmp=null,drawn=[],zoneShape=null,vtx=[],edit=null;
 const $=id=>document.getElementById(id),fab=$('fab'),menu=$('menu');
-function paintColor(){$('fabDot').style.background=D.color;$('mColorDot').style.background=D.color;
-  $('colorSub').innerHTML=COLORS.map(c=>`<button class="sw${c===D.color?' on':''}" data-c="${c}" style="background:${c}" aria-label="Цвет ${c}"></button>`).join('');
-  $('colorSub').querySelectorAll('.sw').forEach(b=>b.onclick=()=>{D.color=b.dataset.c;saveD();paintColor();$('colorSub').hidden=true;});}
-function showMenu(on){menu.hidden=!on;fab.classList.toggle('open',on);fab.setAttribute('aria-expanded',on);if(!on){$('colorSub').hidden=true;$('moreSub').hidden=true;}}
+const A=o=>o.a==null?1:o.a;
+
+// colour swatches + opacity slider bound to an object {c,a}
+function styleRow(box,obj,onChange){
+  const paint=()=>{box.innerHTML=`<div class="sws">${COLORS.map(c=>`<button class="sw${c===obj.c?' on':''}" data-c="${c}" style="background:${c}" aria-label="Цвет"></button>`).join('')}</div>
+   <label>Прозрачность<input type="range" min="10" max="100" step="5" value="${Math.round(A(obj)*100)}" aria-label="Прозрачность"><b>${Math.round(A(obj)*100)}%</b><span class="pv" style="background:${obj.c};opacity:${A(obj)}"></span></label>`;
+    box.querySelectorAll('.sw').forEach(s=>s.onclick=()=>{obj.c=s.dataset.c;paint();onChange();});
+    const r=box.querySelector('input');r.oninput=()=>{obj.a=r.value/100;box.querySelector('b').textContent=r.value+'%';box.querySelector('.pv').style.opacity=obj.a;onChange();};};
+  paint();
+}
+function showMenu(on){menu.hidden=!on;fab.classList.toggle('open',on);fab.setAttribute('aria-expanded',on);if(!on)$('moreSub').hidden=true;}
 fab.onclick=()=>{if(tool){setTool(null);return;}showMenu(menu.hidden);};
-$('mColor').onclick=()=>{$('moreSub').hidden=true;$('colorSub').hidden=!$('colorSub').hidden;};
-$('mMore').onclick=()=>{$('colorSub').hidden=true;$('mHide').textContent=D.hidden?'Показать рисунки':'Скрыть рисунки';$('moreSub').hidden=!$('moreSub').hidden;};
+$('mMore').onclick=()=>{$('mHide').textContent=D.hidden?'Показать рисунки':'Скрыть рисунки';$('moreSub').hidden=!$('moreSub').hidden;};
 $('mText').onclick=()=>setTool('text');$('mArrow').onclick=()=>setTool('arrow');$('mZone').onclick=()=>setTool('zone');
-const opR=$('opRange');const opShow=()=>{opR.value=Math.round(D.alpha*100);$('opVal').textContent=Math.round(D.alpha*100)+'%';};opShow();
-opR.addEventListener('input',()=>{D.alpha=opR.value/100;opShow();saveD();drawAll();});
 $('mUndo').onclick=()=>{undo();showMenu(false);};
 $('mHide').onclick=()=>{D.hidden=!D.hidden;saveD();drawAll();showMenu(false);};
 $('mClear').onclick=()=>{const b=$('mClear');if(b.dataset.sure){undoStack.push({labels:D.labels,arrows:D.arrows});D.labels=[];D.arrows=[];saveD();drawAll();delete b.dataset.sure;b.textContent='Удалить все надписи и стрелки';showMenu(false);}
   else{b.dataset.sure=1;b.textContent='Точно удалить? Нажми ещё раз';}};
 
-function bar(hint,btns){$('toolbar').hidden=!hint;$('tHint').textContent=hint||'';$('tBtns').innerHTML='';
+function bar(hint,btns,styleObj){$('toolbar').hidden=!hint;$('tHint').textContent=hint||'';$('tBtns').innerHTML='';
+  $('tStyle').hidden=!styleObj;if(styleObj)styleRow($('tStyle'),styleObj,()=>{saveD();if(tool==='zone')drawAll();if(arrowTmp)arrowTmp.setOptions({strokeColor:D.tools.arrow.c,fillColor:D.tools.arrow.c});});
   (btns||[]).forEach(([txt,cls,fn])=>{const b=document.createElement('button');b.textContent=txt;if(cls)b.className=cls;b.onclick=fn;$('tBtns').append(b);});}
 function setTool(tl){
-  tool=tl;showMenu(false);clearSel();arrowStart=null;if(arrowTmp){arrowTmp.setMap(null);arrowTmp=null;}
+  tool=tl;showMenu(false);clearSel();closeSheet();arrowStart=null;if(arrowTmp){arrowTmp.setMap(null);arrowTmp=null;}
   $('cross').hidden=tl!=='zone';fab.classList.toggle('open',!!tl);
-  if(tl==='text')bar('Нажми на карту, где поставить надпись.',[['Готово','pri',()=>setTool(null)]]);
-  else if(tl==='arrow')bar('Нажми, откуда стрелка, потом куда.',[['Готово','pri',()=>setTool(null)]]);
+  if(tl==='text')bar('Нажми на карту, где поставить надпись.',[['Готово','pri',()=>setTool(null)]],D.tools.text);
+  else if(tl==='arrow')bar('Нажми, откуда стрелка, потом куда.',[['Готово','pri',()=>setTool(null)]],D.tools.arrow);
   else if(tl==='zone'){D.hidden=false;zoneBar();}
   else bar(null);
   drawAll();
@@ -299,47 +314,61 @@ function zoneBar(){bar(`Наведи крестик на угол границы
   [['Поставить точку','pri',()=>{const c=map.getCenter();D.zone.push([+c.getLat().toFixed(6),+c.getLng().toFixed(6)]);undoStack.push({zonePop:1});saveD();drawAll();zoneBar();}],
    ['Убрать точку','',()=>{D.zone.pop();saveD();drawAll();zoneBar();}],
    ['Готово','',()=>setTool(null)],
-   ...(D.zone.length?[['Стереть','danger',function(){if(this.dataset.sure){undoStack.push({zone:D.zone});D.zone=[];saveD();drawAll();zoneBar();}else{this.dataset.sure=1;this.textContent='Точно стереть?';}}]]:[])]);}
+   ...(D.zone.length?[['Стереть','danger',function(){if(this.dataset.sure){undoStack.push({zone:D.zone});D.zone=[];saveD();drawAll();zoneBar();}else{this.dataset.sure=1;this.textContent='Точно стереть?';}}]]:[])],D.tools.zone);}
 function undo(){const u=undoStack.pop();if(!u)return;
   if(u.label)D.labels=D.labels.filter(l=>l!==u.label);if(u.arrow)D.arrows=D.arrows.filter(a=>a!==u.arrow);
   if(u.labels){D.labels=u.labels;D.arrows=u.arrows;}if(u.zonePop)D.zone.pop();if(u.zone)D.zone=u.zone;
   saveD();drawAll();if(tool==='zone')zoneBar();}
 
-// taps while a tool is active
 function toolTap(ll){
   const p=[+ll.getLat().toFixed(6),+ll.getLng().toFixed(6)];
-  if(tool==='text'){openSheet({p,t:'',c:D.color},true);}
-  else if(tool==='arrow'){
-    if(!arrowStart){arrowStart=p;arrowTmp=new kakao.maps.Circle({map,center:ll,radius:3,strokeWeight:3,strokeColor:D.color,fillColor:D.color,fillOpacity:1,zIndex:6});$('tHint').textContent='Теперь нажми, куда указывает стрелка.';}
-    else{const a={a:arrowStart,b:p,c:D.color};D.arrows.push(a);undoStack.push({arrow:a});saveD();arrowStart=null;arrowTmp.setMap(null);arrowTmp=null;drawAll();$('tHint').textContent='Готово. Можно рисовать следующую стрелку.';}
+  if(tool==='text'){const s=D.tools.text;openSheet('label',{p,t:'',c:s.c,a:A(s)},true);}
+  else if(tool==='arrow'){const s=D.tools.arrow;
+    if(!arrowStart){arrowStart=p;arrowTmp=new kakao.maps.Circle({map,center:ll,radius:3,strokeWeight:3,strokeColor:s.c,fillColor:s.c,fillOpacity:1,zIndex:6});$('tHint').textContent='Теперь нажми, куда указывает стрелка.';}
+    else{const a={a:arrowStart,b:p,c:s.c,o:A(s)};D.arrows.push(a);undoStack.push({arrow:a});saveD();arrowStart=null;arrowTmp.setMap(null);arrowTmp=null;drawAll();$('tHint').textContent='Готово. Можно рисовать следующую стрелку.';}
   }
   else if(tool==='zone'){D.zone.push(p);undoStack.push({zonePop:1});saveD();drawAll();zoneBar();}
 }
-function openSheet(lbl,isNew){editLabel={lbl,isNew};$('tsheet').hidden=false;$('tIn').value=lbl.t;$('tDel').hidden=isNew;setTimeout(()=>$('tIn').focus(),50);}
-function closeSheet(){$('tsheet').hidden=true;$('tIn').blur();editLabel=null;}
-$('tCancel').onclick=closeSheet;
-$('tOk').onclick=()=>{const v=$('tIn').value.trim();if(!editLabel)return;const {lbl,isNew}=editLabel;
-  if(v){lbl.t=v;if(isNew){D.labels.push(lbl);undoStack.push({label:lbl});}else lbl.c=lbl.c||D.color;}
-  else if(!isNew)D.labels=D.labels.filter(l=>l!==lbl);
+
+// bottom sheet: edit a label (text + colour + opacity) or an arrow (colour + opacity)
+function openSheet(kind,obj,isNew){
+  edit={kind,obj,isNew,backup:{...obj}};$('tsheet').hidden=false;
+  $('sTitle').textContent=kind==='label'?(isNew?'Новая надпись':'Надпись'):'Стрелка';
+  $('tIn').hidden=kind!=='label';$('tIn').value=obj.t||'';$('tDel').hidden=isNew;
+  // arrows keep opacity in .o (a/b are its ends), so edit through a proxy
+  const proxy=kind==='arrow'?{get c(){return obj.c},set c(v){obj.c=v},get a(){return obj.o==null?1:obj.o},set a(v){obj.o=v}}:obj;
+  styleRow($('sStyle'),proxy,()=>{if(!isNew)drawAll();});
+  if(kind==='label')setTimeout(()=>$('tIn').focus(),50);
+}
+function closeSheet(){$('tsheet').hidden=true;$('tIn').blur();edit=null;}
+$('tCancel').onclick=()=>{if(edit&&!edit.isNew){Object.assign(edit.obj,edit.backup);drawAll();}closeSheet();};
+$('tOk').onclick=()=>{if(!edit)return;const {kind,obj,isNew}=edit;
+  if(kind==='label'){const v=$('tIn').value.trim();
+    if(v){obj.t=v;if(isNew){D.labels.push(obj);undoStack.push({label:obj});D.tools.text.c=obj.c;D.tools.text.a=obj.a;}}
+    else if(!isNew)D.labels=D.labels.filter(l=>l!==obj);}
   saveD();closeSheet();drawAll();};
 $('tIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('tOk').click();});
-$('tDel').onclick=()=>{if(editLabel){D.labels=D.labels.filter(l=>l!==editLabel.lbl);saveD();}closeSheet();drawAll();};
+$('tDel').onclick=()=>{if(edit){if(edit.kind==='label')D.labels=D.labels.filter(l=>l!==edit.obj);else D.arrows=D.arrows.filter(a=>a!==edit.obj);saveD();}closeSheet();drawAll();};
 
-const vtxImg=()=>new kakao.maps.MarkerImage('data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="8" fill="#fff" stroke="#1f4fd1" stroke-width="4"/></svg>'),new kakao.maps.Size(26,26),{offset:new kakao.maps.Point(13,13)});
+const vtxImg=()=>new kakao.maps.MarkerImage('data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="8" fill="#fff" stroke="'+D.tools.zone.c+'" stroke-width="4"/></svg>'),new kakao.maps.Size(26,26),{offset:new kakao.maps.Point(13,13)});
 function drawAll(){
   if(!map)return;drawn.forEach(o=>o.setMap(null));drawn=[];vtx.forEach(m=>m.setMap(null));vtx=[];if(zoneShape){zoneShape.setMap(null);zoneShape=null;}
-  const L=p=>new kakao.maps.LatLng(p[0],p[1]);
-  if(D.zone.length>1)zoneShape=new kakao.maps.Polygon({map,path:D.zone.map(L),strokeWeight:4,strokeColor:'#1f4fd1',strokeStyle:'dash',strokeOpacity:.95,fillColor:'#1f4fd1',fillOpacity:tool==='zone'?.08:.04,zIndex:2});
+  const L=p=>new kakao.maps.LatLng(p[0],p[1]),z=D.tools.zone;
+  if(D.zone.length>1)zoneShape=new kakao.maps.Polygon({map,path:D.zone.map(L),strokeWeight:4,strokeColor:z.c,strokeStyle:'dash',strokeOpacity:.95*A(z),fillColor:z.c,fillOpacity:(tool==='zone'?.08:.04)*A(z),zIndex:2});
   if(tool==='zone')D.zone.forEach((p,i)=>{const m=new kakao.maps.Marker({map,position:L(p),draggable:true,image:vtxImg(),zIndex:7});
     kakao.maps.event.addListener(m,'dragend',()=>{const q=m.getPosition();D.zone[i]=[+q.getLat().toFixed(6),+q.getLng().toFixed(6)];saveD();drawAll();});vtx.push(m);});
   if(D.hidden)return;
-  D.arrows.forEach(a=>drawn.push(new kakao.maps.Polyline({map,path:[L(a.a),L(a.b)],strokeWeight:5,strokeColor:a.c,strokeOpacity:.95*D.alpha,endArrow:true,zIndex:5})));
-  D.labels.forEach(l=>{const el=document.createElement('div');el.className='lab';el.style.background=l.c;el.style.opacity=D.alpha;el.textContent=l.t;
+  D.arrows.forEach(a=>{const o=a.o==null?1:a.o;
+    const line=new kakao.maps.Polyline({map,path:[L(a.a),L(a.b)],strokeWeight:5,strokeColor:a.c,strokeOpacity:.95*o,endArrow:true,zIndex:5});
+    // wide invisible line on top so the arrow is easy to tap
+    const hit=new kakao.maps.Polyline({map,path:[L(a.a),L(a.b)],strokeWeight:22,strokeColor:'#000',strokeOpacity:0.01,zIndex:6});
+    kakao.maps.event.addListener(hit,'click',()=>{shapeHit=Date.now();if(!tool){clearSel();openSheet('arrow',a,false);}});
+    drawn.push(line,hit);});
+  D.labels.forEach(l=>{const el=document.createElement('div');el.className='lab';el.style.background=l.c;el.style.color=l.c==='#ffffff'?'#18212b':'#fff';el.style.opacity=A(l);el.textContent=l.t;
     ['mousedown','touchstart','touchend','dblclick'].forEach(ev=>el.addEventListener(ev,e=>e.stopPropagation()));
-    el.addEventListener('click',e=>{e.stopPropagation();openSheet(l,false);});
+    el.addEventListener('click',e=>{e.stopPropagation();if(tool&&tool!=='text')return;clearSel();openSheet('label',l,false);});
     drawn.push(new kakao.maps.CustomOverlay({map,position:L(l.p),content:el,xAnchor:.5,yAnchor:.5,zIndex:6,clickable:true}));});
 }
-paintColor();
 
 // ---------- houses with notes are tinted orange ----------
 function drawNoted(){
