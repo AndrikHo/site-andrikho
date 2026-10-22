@@ -48,6 +48,44 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
 #sugg .ad{font-size:12.5px;color:var(--muted);margin-top:2px}
 #sugg .tag{font-size:10.5px;font-weight:700;color:var(--note);margin-left:6px}
 #sugg li.none{color:var(--muted);cursor:default;background:none}
+
+/* ---- drawing menu ---- */
+#fab{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 12px);z-index:22;width:58px;height:58px;border-radius:50%;border:0;background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer;display:grid;place-items:center;transition:transform .2s}
+#fab svg{width:26px;height:26px}
+#fab.open{transform:rotate(45deg)}
+#fab .dot{position:absolute;right:3px;bottom:3px;width:16px;height:16px;border-radius:50%;border:2px solid #fff;transform:rotate(-45deg)}
+#menu{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 82px);z-index:22;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+#menu[hidden]{display:none}
+.mi{display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;cursor:pointer;font:inherit}
+.mi span{background:#fff;color:var(--ink);font-size:13.5px;font-weight:600;padding:5px 10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.mi i{width:46px;height:46px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:19px;color:var(--ink);margin-right:6px}
+.mi i svg{width:22px;height:22px}
+.mi.on i{background:var(--accent);color:#fff}
+.sub{display:flex;gap:8px;background:#fff;border-radius:24px;padding:8px;box-shadow:0 2px 10px rgba(0,0,0,.25);margin-right:6px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100vw - 40px)}
+.sub[hidden]{display:none}
+.sw{width:32px;height:32px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #ccd;cursor:pointer}
+.sw.on{box-shadow:0 0 0 3px var(--ink)}
+.sub.list{flex-direction:column;border-radius:12px;padding:6px}
+.sub.list button{border:0;background:none;font:inherit;font-size:14px;text-align:left;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--ink)}
+.sub.list button:hover{background:#f2f4f7}
+.sub.list button.danger{color:#c92a2a}
+#toolbar{position:fixed;left:max(12px,env(safe-area-inset-left));right:calc(max(16px,env(safe-area-inset-right)) + 70px);bottom:calc(max(16px,env(safe-area-inset-bottom)) + 12px);z-index:21;background:#fff;border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.25);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+#toolbar[hidden]{display:none}
+#toolbar .th{font-size:13px;color:var(--muted)}
+#toolbar .tb{display:flex;gap:6px;flex-wrap:wrap}
+#toolbar button{border:1px solid var(--line);background:#fff;font:inherit;font-size:13.5px;border-radius:8px;padding:8px 11px;cursor:pointer;color:var(--ink)}
+#toolbar button.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+#toolbar button.danger{color:#c92a2a}
+#cross{position:fixed;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;z-index:15;pointer-events:none}
+#cross[hidden]{display:none}
+.lab{padding:4px 9px;border-radius:7px;color:#fff;font:700 14px system-ui,sans-serif;white-space:nowrap;box-shadow:0 1px 5px rgba(0,0,0,.35);border:2px solid #fff;cursor:pointer;transform:translateY(-50%)}
+#tsheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.25);padding:14px max(16px,env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:10px}
+#tsheet[hidden]{display:none}
+#tsheet input{font:inherit;font-size:17px;border:1px solid var(--line);border-radius:8px;padding:10px}
+#tsheet .tb{display:flex;gap:8px;justify-content:flex-end}
+#tsheet button{border:1px solid var(--line);background:#fff;font:inherit;font-size:14px;border-radius:8px;padding:9px 14px;cursor:pointer}
+#tsheet button.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+#tsheet button.danger{color:#c92a2a;margin-right:auto}
 </style>
 </head>
 <body>
@@ -57,6 +95,23 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
   <div class="sbox"><input id="sq" type="search" placeholder="Адрес, дом или место" autocomplete="off" enterkeyhint="search" aria-label="Поиск"><button id="sclose" aria-label="Закрыть поиск">✕</button></div>
   <ul id="sugg"></ul>
 </div>
+<div id="cross" hidden><svg viewBox="0 0 44 44" width="44" height="44"><circle cx="22" cy="22" r="9" fill="none" stroke="#fff" stroke-width="5"/><path d="M22 2v12M22 30v12M2 22h12M30 22h12" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="22" cy="22" r="9" fill="none" stroke="#c92a2a" stroke-width="2.5"/><path d="M22 2v12M22 30v12M2 22h12M30 22h12" stroke="#c92a2a" stroke-width="2.5" stroke-linecap="round"/><circle cx="22" cy="22" r="1.8" fill="#c92a2a"/></svg></div>
+<div id="menu" hidden>
+  <button class="mi" id="mText"><span>Текст или цифры</span><i>T</i></button>
+  <button class="mi" id="mArrow"><span>Стрелка</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 19 5M10 5h9v9"/></svg></i></button>
+  <div class="sub" id="colorSub" hidden></div>
+  <button class="mi" id="mColor"><span>Цвет</span><i><b id="mColorDot" style="width:24px;height:24px;border-radius:50%;display:block"></b></i></button>
+  <div class="sub list" id="moreSub" hidden>
+    <button id="mUndo">Отменить последнее</button>
+    <button id="mHide">Скрыть рисунки</button>
+    <button id="mClear" class="danger">Удалить все надписи и стрелки</button>
+  </div>
+  <button class="mi" id="mMore"><span>Ещё</span><i>⋯</i></button>
+  <button class="mi" id="mZone"><span>Граница участка</span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-dasharray="3 2.4"><path d="M4 7 11 3l9 5-2 11-12 2z"/></svg></i></button>
+</div>
+<button id="fab" aria-label="Меню рисования" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><b class="dot" id="fabDot"></b></button>
+<div id="toolbar" hidden><div class="th" id="tHint"></div><div class="tb" id="tBtns"></div></div>
+<div id="tsheet" hidden><input id="tIn" placeholder="Текст или цифры" enterkeyhint="done" maxlength="40"><div class="tb"><button class="danger" id="tDel">Удалить</button><button id="tCancel">Отмена</button><button class="pri" id="tOk">Готово</button></div></div>
 <div id="msg" hidden></div>
 <script>
 const APPKEY='53f83a531954055ca29efd3e8a0d1a45';
@@ -86,7 +141,7 @@ function init(){
   },{location:map.getCenter(),radius:5000});
   kakao.maps.event.addListener(map,'click',e=>onTap(e.latLng));
   kakao.maps.event.addListener(map,'idle',loadVisible);
-  drawNoted();
+  drawNoted();drawAll();
   msg('Нажми на дом, чтобы увидеть адрес и заметки.',false,5000);
 }
 
@@ -128,6 +183,8 @@ function center(path){let la=0,ln=0;path.forEach(p=>{la+=p[0];ln+=p[1];});return
 function clearSel(){if(hl){hl.setMap(null);hl=null;}if(pop){pop.setMap(null);pop=null;}}
 function onTap(ll){
   if(sbar.classList.contains('open')){openSearch(false);return;}
+  if(!menu.hidden){showMenu(false);return;}
+  if(tool){toolTap(ll);return;}
   clearSel();
   const lat=ll.getLat(),lng=ll.getLng(),b=buildingAt(lat,lng);
   const path=b?b.path:null;
@@ -176,7 +233,7 @@ document.getElementById('sclose').onclick=()=>{sq.value='';openSearch(false);};
 let sTimer,sSeq=0,sItems=[];
 sq.addEventListener('input',()=>{clearTimeout(sTimer);sTimer=setTimeout(runSearch,250);});
 sq.addEventListener('keydown',e=>{if(e.key==='Enter'&&sItems[0]){e.preventDefault();pick(sItems[0]);}if(e.key==='Escape')openSearch(false);});
-const inArea=(lat,lng,addr)=>{const d=Math.hypot((lat-AREA_C[0])*111000,(lng-AREA_C[1])*91000);return d<=AREA_R&&(!addr||/구포|북구/.test(addr));};
+const inArea=(lat,lng,addr)=>{if(D.zone.length>2)return inPoly(lat,lng,D.zone);const d=Math.hypot((lat-AREA_C[0])*111000,(lng-AREA_C[1])*91000);return d<=AREA_R&&(!addr||/구포|북구/.test(addr));};
 function runSearch(){
   const q=sq.value.trim(),seq=++sSeq;if(!q){sugg.innerHTML='';sItems=[];return;}
   if(!map)return;
@@ -199,8 +256,84 @@ async function pick(it){
   openSearch(false);const ll=new kakao.maps.LatLng(it.lat,it.lng);
   map.setLevel(2);map.setCenter(ll);
   try{await loadVisible();}catch(e){}
-  onTap(ll);
+  if(tool)setTool(null);showMenu(false);onTap(ll);
 }
+
+// ---------- drawing: text labels, arrows, colour, territory border ----------
+const DRAW_KEY='gupo-draw-v1',COLORS=['#e8590c','#c92a2a','#1f4fd1','#2b8a3e','#7048e8','#111827'];
+let D=Object.assign({color:'#e8590c',labels:[],arrows:[],zone:[],hidden:false},store.get(DRAW_KEY,{}));
+const saveD=()=>store.set(DRAW_KEY,D),undoStack=[];
+let tool=null,arrowStart=null,arrowTmp=null,drawn=[],zoneShape=null,vtx=[],editLabel=null;
+const $=id=>document.getElementById(id),fab=$('fab'),menu=$('menu');
+function paintColor(){$('fabDot').style.background=D.color;$('mColorDot').style.background=D.color;
+  $('colorSub').innerHTML=COLORS.map(c=>`<button class="sw${c===D.color?' on':''}" data-c="${c}" style="background:${c}" aria-label="Цвет ${c}"></button>`).join('');
+  $('colorSub').querySelectorAll('.sw').forEach(b=>b.onclick=()=>{D.color=b.dataset.c;saveD();paintColor();$('colorSub').hidden=true;});}
+function showMenu(on){menu.hidden=!on;fab.classList.toggle('open',on);fab.setAttribute('aria-expanded',on);if(!on){$('colorSub').hidden=true;$('moreSub').hidden=true;}}
+fab.onclick=()=>{if(tool){setTool(null);return;}showMenu(menu.hidden);};
+$('mColor').onclick=()=>{$('moreSub').hidden=true;$('colorSub').hidden=!$('colorSub').hidden;};
+$('mMore').onclick=()=>{$('colorSub').hidden=true;$('mHide').textContent=D.hidden?'Показать рисунки':'Скрыть рисунки';$('moreSub').hidden=!$('moreSub').hidden;};
+$('mText').onclick=()=>setTool('text');$('mArrow').onclick=()=>setTool('arrow');$('mZone').onclick=()=>setTool('zone');
+$('mUndo').onclick=()=>{undo();showMenu(false);};
+$('mHide').onclick=()=>{D.hidden=!D.hidden;saveD();drawAll();showMenu(false);};
+$('mClear').onclick=()=>{const b=$('mClear');if(b.dataset.sure){undoStack.push({labels:D.labels,arrows:D.arrows});D.labels=[];D.arrows=[];saveD();drawAll();delete b.dataset.sure;b.textContent='Удалить все надписи и стрелки';showMenu(false);}
+  else{b.dataset.sure=1;b.textContent='Точно удалить? Нажми ещё раз';}};
+
+function bar(hint,btns){$('toolbar').hidden=!hint;$('tHint').textContent=hint||'';$('tBtns').innerHTML='';
+  (btns||[]).forEach(([txt,cls,fn])=>{const b=document.createElement('button');b.textContent=txt;if(cls)b.className=cls;b.onclick=fn;$('tBtns').append(b);});}
+function setTool(tl){
+  tool=tl;showMenu(false);clearSel();arrowStart=null;if(arrowTmp){arrowTmp.setMap(null);arrowTmp=null;}
+  $('cross').hidden=tl!=='zone';fab.classList.toggle('open',!!tl);
+  if(tl==='text')bar('Нажми на карту, где поставить надпись.',[['Готово','pri',()=>setTool(null)]]);
+  else if(tl==='arrow')bar('Нажми, откуда стрелка, потом куда.',[['Готово','pri',()=>setTool(null)]]);
+  else if(tl==='zone'){D.hidden=false;zoneBar();}
+  else bar(null);
+  drawAll();
+}
+function zoneBar(){bar(`Наведи крестик на угол границы и нажми «Поставить точку». Точки можно двигать пальцем. Точек: ${D.zone.length}`,
+  [['Поставить точку','pri',()=>{const c=map.getCenter();D.zone.push([+c.getLat().toFixed(6),+c.getLng().toFixed(6)]);undoStack.push({zonePop:1});saveD();drawAll();zoneBar();}],
+   ['Убрать точку','',()=>{D.zone.pop();saveD();drawAll();zoneBar();}],
+   ['Готово','',()=>setTool(null)],
+   ...(D.zone.length?[['Стереть','danger',function(){if(this.dataset.sure){undoStack.push({zone:D.zone});D.zone=[];saveD();drawAll();zoneBar();}else{this.dataset.sure=1;this.textContent='Точно стереть?';}}]]:[])]);}
+function undo(){const u=undoStack.pop();if(!u)return;
+  if(u.label)D.labels=D.labels.filter(l=>l!==u.label);if(u.arrow)D.arrows=D.arrows.filter(a=>a!==u.arrow);
+  if(u.labels){D.labels=u.labels;D.arrows=u.arrows;}if(u.zonePop)D.zone.pop();if(u.zone)D.zone=u.zone;
+  saveD();drawAll();if(tool==='zone')zoneBar();}
+
+// taps while a tool is active
+function toolTap(ll){
+  const p=[+ll.getLat().toFixed(6),+ll.getLng().toFixed(6)];
+  if(tool==='text'){openSheet({p,t:'',c:D.color},true);}
+  else if(tool==='arrow'){
+    if(!arrowStart){arrowStart=p;arrowTmp=new kakao.maps.Circle({map,center:ll,radius:3,strokeWeight:3,strokeColor:D.color,fillColor:D.color,fillOpacity:1,zIndex:6});$('tHint').textContent='Теперь нажми, куда указывает стрелка.';}
+    else{const a={a:arrowStart,b:p,c:D.color};D.arrows.push(a);undoStack.push({arrow:a});saveD();arrowStart=null;arrowTmp.setMap(null);arrowTmp=null;drawAll();$('tHint').textContent='Готово. Можно рисовать следующую стрелку.';}
+  }
+  else if(tool==='zone'){D.zone.push(p);undoStack.push({zonePop:1});saveD();drawAll();zoneBar();}
+}
+function openSheet(lbl,isNew){editLabel={lbl,isNew};$('tsheet').hidden=false;$('tIn').value=lbl.t;$('tDel').hidden=isNew;setTimeout(()=>$('tIn').focus(),50);}
+function closeSheet(){$('tsheet').hidden=true;$('tIn').blur();editLabel=null;}
+$('tCancel').onclick=closeSheet;
+$('tOk').onclick=()=>{const v=$('tIn').value.trim();if(!editLabel)return;const {lbl,isNew}=editLabel;
+  if(v){lbl.t=v;if(isNew){D.labels.push(lbl);undoStack.push({label:lbl});}else lbl.c=lbl.c||D.color;}
+  else if(!isNew)D.labels=D.labels.filter(l=>l!==lbl);
+  saveD();closeSheet();drawAll();};
+$('tIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('tOk').click();});
+$('tDel').onclick=()=>{if(editLabel){D.labels=D.labels.filter(l=>l!==editLabel.lbl);saveD();}closeSheet();drawAll();};
+
+const vtxImg=()=>new kakao.maps.MarkerImage('data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="8" fill="#fff" stroke="#1f4fd1" stroke-width="4"/></svg>'),new kakao.maps.Size(26,26),{offset:new kakao.maps.Point(13,13)});
+function drawAll(){
+  if(!map)return;drawn.forEach(o=>o.setMap(null));drawn=[];vtx.forEach(m=>m.setMap(null));vtx=[];if(zoneShape){zoneShape.setMap(null);zoneShape=null;}
+  const L=p=>new kakao.maps.LatLng(p[0],p[1]);
+  if(D.zone.length>1)zoneShape=new kakao.maps.Polygon({map,path:D.zone.map(L),strokeWeight:4,strokeColor:'#1f4fd1',strokeStyle:'dash',strokeOpacity:.95,fillColor:'#1f4fd1',fillOpacity:tool==='zone'?.08:.04,zIndex:2});
+  if(tool==='zone')D.zone.forEach((p,i)=>{const m=new kakao.maps.Marker({map,position:L(p),draggable:true,image:vtxImg(),zIndex:7});
+    kakao.maps.event.addListener(m,'dragend',()=>{const q=m.getPosition();D.zone[i]=[+q.getLat().toFixed(6),+q.getLng().toFixed(6)];saveD();drawAll();});vtx.push(m);});
+  if(D.hidden)return;
+  D.arrows.forEach(a=>drawn.push(new kakao.maps.Polyline({map,path:[L(a.a),L(a.b)],strokeWeight:5,strokeColor:a.c,strokeOpacity:.95,endArrow:true,zIndex:5})));
+  D.labels.forEach(l=>{const el=document.createElement('div');el.className='lab';el.style.background=l.c;el.textContent=l.t;
+    ['mousedown','touchstart','touchend','dblclick'].forEach(ev=>el.addEventListener(ev,e=>e.stopPropagation()));
+    el.addEventListener('click',e=>{e.stopPropagation();openSheet(l,false);});
+    drawn.push(new kakao.maps.CustomOverlay({map,position:L(l.p),content:el,xAnchor:.5,yAnchor:.5,zIndex:6,clickable:true}));});
+}
+paintColor();
 
 // ---------- houses with notes are tinted orange ----------
 function drawNoted(){
