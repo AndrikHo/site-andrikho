@@ -90,7 +90,10 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
 #toolbar button.danger{color:#c92a2a}
 #cross{position:fixed;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;z-index:15;pointer-events:none}
 #cross[hidden]{display:none}
-.lab{padding:4px 9px;border-radius:7px;color:#fff;font:700 14px system-ui,sans-serif;white-space:nowrap;box-shadow:0 1px 5px rgba(0,0,0,.35);border:2px solid #fff;cursor:pointer;transform:translateY(-50%)}
+.lab{position:relative;margin-bottom:9px;padding:5px 11px;border-radius:11px;background:var(--bg);color:#fff;font:700 14px system-ui,sans-serif;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .12s}
+.lab:after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-7px;border:7px solid transparent;border-bottom:0;border-top:9px solid var(--bg)}
+.lab.lift{transform:translateY(-4px) scale(1.08);box-shadow:0 8px 18px rgba(0,0,0,.35)}
+#map.dragging{cursor:grabbing}
 #tsheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--glass2);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-radius:16px 16px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.25);padding:14px max(16px,env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:10px}
 #tsheet[hidden]{display:none}
 #tsheet input{background:rgba(255,255,255,.75);font:inherit;font-size:17px;border:1px solid var(--line);border-radius:8px;padding:10px}
@@ -277,6 +280,7 @@ let D=Object.assign({labels:[],arrows:[],zone:[],hidden:false},store.get(DRAW_KE
 D.tools=Object.assign({text:{c:'#e8590c',a:1},arrow:{c:'#c92a2a',a:1},zone:{c:'#1f4fd1',a:1}},D.tools||{});
 if(D.color&&!store.get(DRAW_KEY,{}).tools){D.tools.text.c=D.tools.arrow.c=D.color;}
 const saveD=()=>store.set(DRAW_KEY,D),undoStack=[];
+const labOf=new WeakMap(),ovOf=new WeakMap(),lineOf=new WeakMap();
 let shapeHit=0,tool=null,arrowStart=null,arrowTmp=null,drawn=[],zoneShape=null,vtx=[],edit=null;
 const $=id=>document.getElementById(id),fab=$('fab'),menu=$('menu');
 const A=o=>o.a==null?1:o.a;
@@ -317,7 +321,7 @@ function zoneBar(){bar(`Наведи крестик на угол границы
    ...(D.zone.length?[['Стереть','danger',function(){if(this.dataset.sure){undoStack.push({zone:D.zone});D.zone=[];saveD();drawAll();zoneBar();}else{this.dataset.sure=1;this.textContent='Точно стереть?';}}]]:[])],D.tools.zone);}
 function undo(){const u=undoStack.pop();if(!u)return;
   if(u.label)D.labels=D.labels.filter(l=>l!==u.label);if(u.arrow)D.arrows=D.arrows.filter(a=>a!==u.arrow);
-  if(u.labels){D.labels=u.labels;D.arrows=u.arrows;}if(u.zonePop)D.zone.pop();if(u.zone)D.zone=u.zone;
+  if(u.labels){D.labels=u.labels;D.arrows=u.arrows;}if(u.moveLabel)u.moveLabel.p=u.p;if(u.moveArrow){u.moveArrow.a=u.a;u.moveArrow.b=u.b;}if(u.zonePop)D.zone.pop();if(u.zone)D.zone=u.zone;
   saveD();drawAll();if(tool==='zone')zoneBar();}
 
 function toolTap(ll){
@@ -363,12 +367,63 @@ function drawAll(){
     // wide invisible line on top so the arrow is easy to tap
     const hit=new kakao.maps.Polyline({map,path:[L(a.a),L(a.b)],strokeWeight:22,strokeColor:'#000',strokeOpacity:0.01,zIndex:6});
     kakao.maps.event.addListener(hit,'click',()=>{shapeHit=Date.now();if(!tool){clearSel();openSheet('arrow',a,false);}});
-    drawn.push(line,hit);});
-  D.labels.forEach(l=>{const el=document.createElement('div');el.className='lab';el.style.background=l.c;el.style.color=l.c==='#ffffff'?'#18212b':'#fff';el.style.opacity=A(l);el.textContent=l.t;
+    lineOf.set(a,[line,hit]);drawn.push(line,hit);});
+  D.labels.forEach(l=>{const el=document.createElement('div');el.className='lab';el.style.setProperty('--bg',l.c);el.style.color=l.c==='#ffffff'?'#18212b':'#fff';labOf.set(el,l);el.style.opacity=A(l);el.textContent=l.t;
     ['mousedown','touchstart','touchend','dblclick'].forEach(ev=>el.addEventListener(ev,e=>e.stopPropagation()));
-    el.addEventListener('click',e=>{e.stopPropagation();if(tool&&tool!=='text')return;clearSel();openSheet('label',l,false);});
-    drawn.push(new kakao.maps.CustomOverlay({map,position:L(l.p),content:el,xAnchor:.5,yAnchor:.5,zIndex:6,clickable:true}));});
+    el.addEventListener('click',e=>{e.stopPropagation();if(Date.now()-shapeHit<400)return;if(tool&&tool!=='text')return;clearSel();openSheet('label',l,false);});
+    const ov=new kakao.maps.CustomOverlay({map,position:L(l.p),content:el,xAnchor:.5,yAnchor:1,zIndex:6,clickable:true});ovOf.set(l,ov);drawn.push(ov);});
 }
+
+// ---------- press & hold to move labels and arrows ----------
+(function(){
+  const mapEl=document.getElementById('map');
+  let st=null; // {x,y,timer,kind,obj,part,dragging,startLL,orig}
+  const pt=e=>{const r=mapEl.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
+  const toLL=([x,y])=>map.getProjection().coordsFromContainerPoint(new kakao.maps.Point(x,y));
+  const toPx=p=>{const q=map.getProjection().containerPointFromCoords(new kakao.maps.LatLng(p[0],p[1]));return[q.x,q.y];};
+  function segDist(P,A,B){const dx=B[0]-A[0],dy=B[1]-A[1],l=dx*dx+dy*dy||1;let u=((P[0]-A[0])*dx+(P[1]-A[1])*dy)/l;u=Math.max(0,Math.min(1,u));return Math.hypot(P[0]-A[0]-u*dx,P[1]-A[1]-u*dy);}
+  function findArrow(P){if(D.hidden)return null;let best=null,bd=16;
+    D.arrows.forEach(a=>{const A=toPx(a.a),B=toPx(a.b),d=segDist(P,A,B);if(d<bd){bd=d;
+      const part=Math.hypot(P[0]-B[0],P[1]-B[1])<26?'b':Math.hypot(P[0]-A[0],P[1]-A[1])<26?'a':'all';best={obj:a,part};}});return best;}
+  function down(e){
+    if(!map||e.button>0||(e.pointerType==='touch'&&!e.isPrimary)||!document.getElementById('tsheet').hidden)return;
+    const P=pt(e),labEl=e.target.closest&&e.target.closest('.lab');
+    let hit=null;
+    if(labEl&&labOf.has(labEl))hit={kind:'label',obj:labOf.get(labEl),el:labEl};
+    else if(tool!=='zone'){const a=findArrow(P);if(a)hit={kind:'arrow',...a};}
+    if(!hit)return;
+    st={...hit,x:P[0],y:P[1],dragging:false,timer:setTimeout(()=>start(),450)};
+  }
+  function start(){
+    if(!st)return;st.dragging=true;map.setDraggable(false);mapEl.classList.add('dragging');clearSel();
+    if(navigator.vibrate)try{navigator.vibrate(25);}catch(e){}
+    if(st.kind==='label'){st.el.classList.add('lift');st.orig=[...st.obj.p];st.anchorPx=toPx(st.obj.p);}
+    else{st.orig={a:[...st.obj.a],b:[...st.obj.b]};st.A=toPx(st.obj.a);st.B=toPx(st.obj.b);}
+  }
+  function move(e){
+    if(!st)return;const P=pt(e);
+    if(!st.dragging){if(Math.hypot(P[0]-st.x,P[1]-st.y)>8){clearTimeout(st.timer);st=null;}return;}
+    e.preventDefault();e.stopPropagation();
+    const dx=P[0]-st.x,dy=P[1]-st.y,r6=v=>+v.toFixed(6);
+    if(st.kind==='label'){const ll=toLL([st.anchorPx[0]+dx,st.anchorPx[1]+dy]);st.obj.p=[r6(ll.getLat()),r6(ll.getLng())];ovOf.get(st.obj)?.setPosition(ll);}
+    else{const o=st.obj,mv=(S)=>{const ll=toLL([S[0]+dx,S[1]+dy]);return[r6(ll.getLat()),r6(ll.getLng())];};
+      if(st.part!=='b')o.a=mv(st.A);if(st.part!=='a')o.b=mv(st.B);
+      const path=[new kakao.maps.LatLng(o.a[0],o.a[1]),new kakao.maps.LatLng(o.b[0],o.b[1])];(lineOf.get(o)||[]).forEach(l=>l.setPath(path));}
+  }
+  function up(){
+    if(!st)return;clearTimeout(st.timer);
+    if(st.dragging){shapeHit=Date.now();map.setDraggable(true);mapEl.classList.remove('dragging');
+      if(st.el)st.el.classList.remove('lift');
+      undoStack.push(st.kind==='label'?{moveLabel:st.obj,p:st.orig}:{moveArrow:st.obj,...st.orig});saveD();}
+    st=null;
+  }
+  mapEl.addEventListener('pointerdown',down,true);
+  window.addEventListener('pointermove',move,{capture:true,passive:false});
+  window.addEventListener('pointerup',up,true);window.addEventListener('pointercancel',up,true);
+  // keep the map from panning while something is being moved
+  ['touchmove','mousemove'].forEach(ev=>mapEl.addEventListener(ev,e=>{if(st&&st.dragging){e.preventDefault();e.stopPropagation();}},{capture:true,passive:false}));
+  mapEl.addEventListener('contextmenu',e=>{if(st)e.preventDefault();});
+})();
 
 // ---------- houses with notes are tinted orange ----------
 function drawNoted(){
