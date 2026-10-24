@@ -40,6 +40,9 @@ function computeZf(){if(!map)return;zf=Math.max(ZF_MIN,Math.min(ZF_MAX,Math.pow(
 /* ---------- edit mode, tools, panels ---------- */
 let editing=false,tool=null,sel=null,panel=null,arrowStart=null,arrowTmp=null,txtCtx=null;
 window.editing=false;
+/* house-number ruler: measure a street line, read house numbers per street in a corridor */
+const RULER_COLORS=['#e8590c','#1f4fd1','#2b8a3e','#c92a2a','#7048e8','#f59f00'];
+let rulerStart=null,rulerEnd=null,rulerTmp=null,rulerWidth=25,rulerPreview=[],rulerData=null;
 function setEditing(on){
   editing=on;window.editing=on;document.body.classList.toggle('edit',on);
   if(on&&typeof openSearch==='function'&&$('sbar').classList.contains('open'))openSearch(false);
@@ -52,6 +55,7 @@ window.setEditing=setEditing;
 
 function setTool(t){
   tool=t;arrowStart=null;if(arrowTmp){arrowTmp.setMap(null);arrowTmp=null;}
+  if(t!=='ruler')rulerReset();
   const cr=$('cross');if(cr)cr.hidden=t!=='zone';if(t)select(null,true);
   drawAll();refreshUI();
 }
@@ -61,7 +65,7 @@ function openPanel(k){panel=k;const f=$('fly');show(f,!!k,'r');if(k)renderPanel(
 function refreshToolBtns(){
   const set=(id,on)=>{const e=$(id);if(e)e.classList.toggle('on',on);};
   set('tZone',tool==='zone');set('tShape',panel==='shape'||tool==='shape');
-  set('tArrow',panel==='arrow'||tool==='arrow');set('tFont',panel==='font');set('tColor',panel==='color');
+  set('tArrow',panel==='arrow'||tool==='arrow');set('tRuler',tool==='ruler');set('tFont',panel==='font');set('tColor',panel==='color');
   const c=colorTarget(),d=$('cDot');if(d)d.style.background=c.get().c;
 }
 function colorTarget(){
@@ -115,6 +119,12 @@ function renderPanel(){
      <label class="row">${tr('opacity')}<input type="range" id="cA" min="10" max="100" step="5" value="${Math.round((cur.a==null?1:cur.a)*100)}"><b id="cAV">${Math.round((cur.a==null?1:cur.a)*100)}%</b></label>
      <div class="prev"><i id="cPrev"></i></div>`;
     colorWheel(Tg);
+  }else if(panel==='ruler'){
+    f.innerHTML=`<h3>${tr('t_ruler')}</h3>
+     <label class="row">${tr('ruler_width')}<input type="range" id="rW" min="5" max="60" step="1" value="${rulerWidth}"><b id="rWV">${rulerWidth}м</b></label>
+     <div class="target" id="rOut"></div>`;
+    $('rW').oninput=e=>{rulerWidth=+e.target.value;$('rWV').textContent=rulerWidth+'м';drawRulerPreview();};
+    updateRulerOut();
   }
 }
 /* HSV colour wheel */
@@ -157,6 +167,9 @@ function refreshUI(){
       [tr('ok'),'',()=>setTool(null)]];
   }else if(tool==='shape'){hint=tr('h_shape',{x:shapeName(D.def.shape)});btns=[[tr('ok'),'',()=>setTool(null)]];}
   else if(tool==='arrow'){hint=arrowStart?tr('h_arrow2'):tr('h_arrow',{x:arrowName(D.def.arrow)});btns=[[tr('ok'),'',()=>setTool(null)]];}
+  else if(tool==='ruler'){
+    hint=!rulerStart?tr('h_ruler_a'):!rulerEnd?tr('h_ruler_b'):tr('h_ruler_adj');
+    btns=rulerEnd?[[tr('ok'),'pri',commitRuler],[tr('cancel'),'',()=>setTool(null)]]:[[tr('cancel'),'',()=>setTool(null)]];}
   else if(sel&&sel.k==='shape'){hint=tr('h_selshape');
     btns=[[tr('text'),'',()=>openText(sel,false)],[tr('del'),'danger',delSel],[tr('unsel'),'',()=>select(null)]];}
   else if(sel&&sel.k==='arrow'){hint=tr('h_selarrow');
@@ -172,6 +185,11 @@ function delSel(){if(!sel)return;snap();D.items=D.items.filter(i=>i!==sel);sel=n
 /* taps on the map while editing */
 function editTap(ll){
   const p=[r6(ll.getLat()),r6(ll.getLng())];
+  if(tool==='ruler'){
+    if(rulerEnd)return; // adjust phase: use the width slider, ignore map taps
+    if(!rulerStart){rulerStart=p;rulerTmp=new kakao.maps.Circle({map,center:ll,radius:3,strokeWeight:3,strokeColor:'#111827',fillColor:'#111827',fillOpacity:1,zIndex:7});refreshUI();return;}
+    rulerEnd=p;if(rulerTmp){rulerTmp.setMap(null);rulerTmp=null;}
+    openPanel('ruler');drawRulerPreview();refreshUI();return;}
   if(panel){openPanel(null);return;}
   if(tool==='zone'){snap();D.zone.push(p);saveD();drawAll();refreshUI();return;}
   if(tool==='shape'){const it={id:newId(),k:'shape',form:D.def.shape,p,t:'',fill:D.def.c,a:D.def.a,s:1,font:{...D.def.font}};openText(it,true);return;}
@@ -208,7 +226,9 @@ function styleShape(el,it){
   el.style.setProperty('--bg',it.fill);el.style.background=it.fill;el.style.opacity=A1(it.a);
   el.style.fontSize=(14*(it.s||1)*zf).toFixed(1)+'px';el.style.fontFamily=FONT_CSS[F.f]||FONT_CSS.sys;
   el.style.fontWeight=F.b?'700':'400';el.style.fontStyle=F.i?'italic':'normal';el.style.letterSpacing=(F.ls||0)+'px';
-  el.style.color=hexA(F.c||'#ffffff',A1(F.a));el.textContent=it.t||'';
+  el.style.color=hexA(F.c||'#ffffff',A1(F.a));
+  if(it.rich&&it.rich.length)el.innerHTML=it.rich.map(s=>`<span style="color:${s.c}">${esc(s.t)}</span>`).join('');
+  else el.textContent=it.t||'';
 }
 function geoLen(a,b){return Math.hypot((a[0]-b[0])*111000,(a[1]-b[1])*91000);}
 function drawItem(it){
@@ -268,7 +288,7 @@ function initGestures(){
     const P=evPt(e);
     if(!editing){ // normal mode: press & hold a house = open it
       st={kind:'house',x:P[0],y:P[1],timer:setTimeout(()=>{st=null;pressHouse(toLLpx(P));tapBlock=Date.now();if(navigator.vibrate)try{navigator.vibrate(20)}catch(e){}},500)};return;}
-    if(tool==='zone'||tool==='arrow')return;
+    if(tool==='zone'||tool==='arrow'||tool==='ruler')return;
     const el=e.target.closest&&e.target.closest('.shp');let hit=null;
     if(el&&elOf.has(el))hit={obj:elOf.get(el),el};
     else{const a=findArrowAt(P);if(a)hit={obj:a.obj,part:a.part};}
@@ -328,6 +348,66 @@ function resizeSel(v){
   else{sel.w=+Math.max(2,Math.min(30,v)).toFixed(1);drawItem(sel);}
 }
 
+/* ---------- house-number ruler ----------
+   Draw a line along a street; collect buildings whose centroid projects onto the
+   segment within ±(width/2) metres; group by road (rd), keep streets with 2+ houses,
+   read the main house number (part before any dash), order streets & ranges by draw
+   direction. Result = a direction arrow + a multi-colour pill label saved to D. */
+function rulerReset(){rulerStart=null;rulerEnd=null;rulerData=null;if(rulerTmp){rulerTmp.setMap(null);rulerTmp=null;}clearRulerPreview();}
+function clearRulerPreview(){rulerPreview.forEach(o=>o.setMap(null));rulerPreview=[];}
+function computeRuler(){
+  if(!rulerStart||!rulerEnd||typeof buildings==='undefined')return null;
+  const o=rulerStart,mla=111320,mln=111320*Math.cos(o[0]*Math.PI/180);
+  const Bx=(rulerEnd[1]-o[1])*mln,By=(rulerEnd[0]-o[0])*mla,L2=Bx*Bx+By*By||1,hw=rulerWidth/2;
+  const byRd={};
+  for(const b of buildings){
+    const c=centroid(b.path),Cx=(c[1]-o[1])*mln,Cy=(c[0]-o[0])*mla;
+    const u=(Cx*Bx+Cy*By)/L2;if(u<0||u>1)continue;                 // projection must fall on the segment
+    if(Math.hypot(Cx-u*Bx,Cy-u*By)>hw)continue;                    // within the corridor half-width
+    const main=parseInt(String(b.no).split('-')[0],10);if(isNaN(main))continue;
+    (byRd[b.rd]=byRd[b.rd]||[]).push({u,main,b});
+  }
+  const streets=Object.keys(byRd).map(rd=>{const arr=byRd[rd].sort((p,q)=>p.u-q.u);
+    if(arr.length<2)return null;                                    // drop single-house noise
+    return{rd,count:arr.length,first:arr[0].main,last:arr[arr.length-1].main,single:arr[0].main===arr[arr.length-1].main,minU:arr[0].u,bld:arr.map(x=>x.b)};
+  }).filter(Boolean).sort((p,q)=>p.minU-q.minU);                    // order by where the line meets each street
+  streets.forEach((s,i)=>s.color=RULER_COLORS[i%RULER_COLORS.length]);
+  return{streets,total:streets.reduce((n,s)=>n+s.count,0)};
+}
+const rulerRange=s=>s.single?String(s.first):s.first+'→'+s.last;    // by draw direction, not min–max
+function rulerParts(){
+  if(!rulerData||!rulerData.streets.length)return[{t:tr('ruler_none'),c:'#f08c00'}];
+  const parts=[];rulerData.streets.forEach((s,i)=>{if(i)parts.push({t:'  /  ',c:'#ced4da'});parts.push({t:s.rd+' '+rulerRange(s),c:s.color});});
+  return parts;
+}
+function updateRulerOut(){const el=$('rOut');if(!el)return;
+  el.innerHTML=rulerParts().map(p=>`<span style="color:${p.c};font-weight:800">${esc(p.t)}</span>`).join('')
+   +(rulerData&&rulerData.total?`<div style="margin-top:4px;opacity:.7">${rulerData.total} ${tr('ruler_houses')}</div>`:'');
+}
+function drawRulerPreview(){
+  clearRulerPreview();if(!rulerStart||!rulerEnd)return;
+  rulerData=computeRuler();
+  const o=rulerStart,mla=111320,mln=111320*Math.cos(o[0]*Math.PI/180);
+  const fromXY=(x,y)=>new kakao.maps.LatLng(o[0]+y/mla,o[1]+x/mln);
+  const Bx=(rulerEnd[1]-o[1])*mln,By=(rulerEnd[0]-o[0])*mla,len=Math.hypot(Bx,By)||1,hw=rulerWidth/2;
+  const nx=-By/len*hw,ny=Bx/len*hw;
+  rulerPreview.push(new kakao.maps.Polygon({map,path:[fromXY(nx,ny),fromXY(Bx+nx,By+ny),fromXY(Bx-nx,By-ny),fromXY(-nx,-ny)],strokeWeight:1,strokeColor:'#495057',strokeStyle:'shortdash',strokeOpacity:.7,fillColor:'#868e96',fillOpacity:.12,zIndex:3}));
+  if(rulerData)rulerData.streets.forEach(s=>s.bld.forEach(b=>rulerPreview.push(new kakao.maps.Polygon({map,path:b.path.map(LL),strokeWeight:2.5,strokeColor:s.color,strokeOpacity:.95,fillColor:s.color,fillOpacity:.22,zIndex:4}))));
+  rulerPreview.push(new kakao.maps.Polyline({map,path:[LL(rulerStart),LL(rulerEnd)],strokeWeight:4,strokeColor:'#111827',strokeOpacity:.95,endArrow:true,zIndex:5}));
+  updateRulerOut();
+}
+function commitRuler(){
+  if(!rulerData||!rulerData.streets.length){msg(tr('ruler_none'),true,3000);return;}
+  snap();
+  const line={id:newId(),k:'arrow',type:'plain',a:rulerStart,b:rulerEnd,c:'#111827',o:1,w:5};
+  const mid=[r6((rulerStart[0]+rulerEnd[0])/2),r6((rulerStart[1]+rulerEnd[1])/2)];
+  const rich=[],plain=[];
+  rulerData.streets.forEach((s,i)=>{if(i){rich.push({t:'  /  ',c:'#ced4da'});plain.push(' / ');}const txt=s.rd+' '+rulerRange(s);rich.push({t:txt,c:s.color});plain.push(txt);});
+  const label={id:newId(),k:'shape',form:'pill',p:mid,t:plain.join(''),rich,fill:'#111827',a:1,s:1,font:{...D.def.font,c:'#ffffff'}};
+  D.items.push(line,label);saveD();
+  openPanel(null);setTool(null);
+}
+
 /* ---------- static button wiring (DOM ready at load) ---------- */
 $('bEdit').onclick=()=>setEditing(true);
 $('closeBtn').onclick=()=>setEditing(false);
@@ -338,9 +418,10 @@ $('hRedo').onclick=()=>{if(!fut.length)return;hist.push(JSON.stringify(D));resto
   if(k==='zone'){openPanel(null);setTool(tool==='zone'?null:'zone');return;}
   openPanel(panel===k?null:k);
 });
+$('tRuler').onclick=()=>{openPanel(null);setTool(tool==='ruler'?null:'ruler');};
 $('txtCancel').onclick=closeText;
 $('txtOk').onclick=()=>{if(!txtCtx)return;const {it,isNew}=txtCtx;snap();
-  if(it.k==='arrow'){it.n1=$('n1').value.trim();it.n2=$('n2').value.trim();}else it.t=$('txtIn').value.replace(/\s+$/,'');
+  if(it.k==='arrow'){it.n1=$('n1').value.trim();it.n2=$('n2').value.trim();}else{it.t=$('txtIn').value.replace(/\s+$/,'');delete it.rich;}
   if(isNew)D.items.push(it);saveD();closeText();drawAll();refreshUI();};
 $('txtDel').onclick=()=>{if(!txtCtx)return;snap();D.items=D.items.filter(i=>i!==txtCtx.it);if(sel===txtCtx.it)select(null,true);saveD();closeText();drawAll();refreshUI();};
 $('txtIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('txtOk').click();}});
@@ -370,7 +451,7 @@ window.drawOnTap=function(ll){
 window.drawApplyLang=function(){
   const T2=(id,k)=>{const e=$(id);if(e)e.textContent=tr(k);},Aa=(id,k,ti)=>{const e=$(id);if(!e)return;e.setAttribute('aria-label',tr(k));if(ti)e.title=tr(k);};
   T2('lAcc','acc');T2('lEdit','draw');Aa('closeBtn','close_edit');Aa('toolIsl','tools');
-  Aa('tZone','t_zone',1);Aa('tShape','t_shape',1);Aa('tArrow','t_arrow',1);Aa('tFont','t_font',1);Aa('tColor','t_color',1);
+  Aa('tZone','t_zone',1);Aa('tShape','t_shape',1);Aa('tArrow','t_arrow',1);Aa('tRuler','t_ruler',1);Aa('tFont','t_font',1);Aa('tColor','t_color',1);
   Aa('hUndo','undo',1);Aa('hRedo','redo',1);
   $('txtIn').placeholder=tr('text_ph');$('n1').placeholder=tr('from');Aa('n1','from');$('n2').placeholder=tr('to');Aa('n2','to');
   T2('txtDel','del');T2('txtCancel','cancel');T2('txtOk','ok');

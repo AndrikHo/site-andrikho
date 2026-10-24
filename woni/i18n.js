@@ -48,7 +48,11 @@ const I18N={
    history:'История',history_prev:'Предыдущий месяц',history_next:'Следующий месяц',
    history_locked:'История будет доступна после входа в аккаунт. Пока это превью.',
    hist_search_ph:'Поиск: адрес, квартира, заметка',no_deliv_day:'В этот день доставок нет',pick_day:'Выбери день в календаре',
-   deliveries_n:'доставок',back:'Назад'
+   deliveries_n:'доставок',back:'Назад',
+   // phase 2: house-number ruler
+   t_ruler:'Линейка домов',h_ruler_a:'Линейка: нажми начало линии вдоль улицы.',h_ruler_b:'Теперь нажми конец линии.',
+   h_ruler_adj:'Тяни ширину коридора. «Готово» — поставить подпись.',ruler_width:'Ширина коридора',ruler_houses:'домов',
+   ruler_none:'Домов не найдено — расширь коридор или сдвинь линию.'
  },
  ko:{
    h1:'Woni 택배',pp:'선불',cc:'착불',part:'부분결제',cr:'신용',etc:'기타',done:'배송완료',
@@ -84,7 +88,10 @@ const I18N={
    history:'배송 이력',history_prev:'이전 달',history_next:'다음 달',
    history_locked:'배송 이력은 로그인 후 이용할 수 있습니다. 지금은 미리보기입니다.',
    hist_search_ph:'검색: 주소, 호수, 메모',no_deliv_day:'이 날에는 배송이 없습니다',pick_day:'달력에서 날짜를 선택하세요',
-   deliveries_n:'건 배송',back:'뒤로'
+   deliveries_n:'건 배송',back:'뒤로',
+   t_ruler:'집 번호 측정기',h_ruler_a:'측정기: 길을 따라 선의 시작점을 누르세요.',h_ruler_b:'이제 선의 끝점을 누르세요.',
+   h_ruler_adj:'코리더 너비를 조절하세요. 「완료」로 라벨을 놓습니다.',ruler_width:'코리더 너비',ruler_houses:'집',
+   ruler_none:'집을 찾지 못했습니다 — 너비를 넓히거나 선을 옮기세요.'
  }
 };
 let LANG=store.get('woni-lang',null)||((navigator.language||'').toLowerCase().startsWith('ko')?'ko':'ru');
