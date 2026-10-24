@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<title>Woni 택배 헬퍼</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+:root{
+  --glass:rgba(255,255,255,.78);--glass2:rgba(255,255,255,.92);--ink:#16202b;--muted:#5b6672;--line:rgba(24,33,43,.12);
+  --accent:#1f4fd1;--danger:#c92a2a;
+  --pp:#2f9e44;--cc:#e03131;--part:#f08c00;--cr:#1c7ed6;--etc:#7048e8;--done:#9aa4ad;
+  --ease:cubic-bezier(.2,.85,.25,1);--sb:env(safe-area-inset-bottom,0px);--st:env(safe-area-inset-top,0px);
+  --sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#eef1f4;overflow:hidden}
+body{font-family:"Noto Sans KR",system-ui,-apple-system,sans-serif;color:var(--ink);-webkit-tap-highlight-color:transparent;word-break:keep-all;overflow-wrap:anywhere}
+button{font:inherit;color:inherit}
+#map{position:fixed;inset:0}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(6px) saturate(1.2);box-shadow:0 4px 18px rgba(0,0,0,.18),0 0 0 1px rgba(255,255,255,.5) inset}
+
+#msg{position:fixed;left:50%;top:calc(var(--st) + 12px);transform:translateX(-50%);max-width:calc(100vw - 32px);z-index:40;font-size:13px;color:var(--muted);padding:8px 14px;border-radius:12px;transition:opacity .3s}
+#msg.err{color:var(--danger)}
+#msg.hide{opacity:0;pointer-events:none}
+
+#legend{position:fixed;left:calc(var(--sl) + 12px);top:calc(var(--st) + 12px);z-index:30;padding:10px 12px;border-radius:14px;max-width:46vw}
+#legend h1{margin:0 0 7px;font-size:13px;font-weight:800;letter-spacing:.01em}
+#legend .lg{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);line-height:1.9}
+#legend .d{width:11px;height:11px;border-radius:50%;flex:none;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+
+#prog{position:fixed;right:calc(var(--sr) + 12px);top:calc(var(--st) + 12px);z-index:30;padding:9px 13px;border-radius:14px;text-align:right}
+#prog .big{font-size:18px;font-weight:800;line-height:1}
+#prog .sm{font-size:11px;color:var(--muted);margin-top:3px}
+
+#reset{position:fixed;left:50%;bottom:calc(var(--sb) + 16px);transform:translateX(-50%);z-index:30;border:0;border-radius:999px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;color:var(--ink)}
+#reset svg{width:17px;height:17px;vertical-align:-3px;margin-right:6px}
+
+.pin{position:relative;transform:translate(-50%,-50%);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;border:2.5px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.4);cursor:pointer;-webkit-user-select:none;user-select:none}
+.pin.done{opacity:.5}
+
+.pop{position:relative;width:min(320px,calc(100vw - 32px));border-radius:16px;margin-bottom:14px;font-size:14px;background:var(--glass2);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);box-shadow:0 6px 22px rgba(0,0,0,.28)}
+.pop:after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-8px;border:8px solid transparent;border-bottom:0;border-top-color:var(--glass2)}
+.pop .x{position:absolute;top:8px;right:8px;width:30px;height:30px;border:0;background:none;font-size:18px;color:var(--muted);cursor:pointer;z-index:2}
+.phead{padding:13px 44px 11px 15px}
+.phead .rd{font-weight:800;font-size:15px;line-height:1.3}
+.phead .jb{color:var(--muted);font-size:12.5px;margin-top:3px}
+.plist{border-top:1px solid var(--line);max-height:46vh;overflow:auto}
+.pc{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:start;padding:11px 15px;border-bottom:1px solid var(--line)}
+.pc:last-child{border-bottom:0}
+.pc.done{opacity:.5}
+.pc .dot{width:14px;height:14px;border-radius:50%;margin-top:3px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+.pc .mid{min-width:0}
+.pc .unit{font-weight:800;font-size:14.5px}
+.pc .unit .pay{font-size:11px;font-weight:700;margin-left:7px;padding:1px 6px;border-radius:5px;color:#fff;vertical-align:1px}
+.pc .cash{font-weight:800;margin-left:6px}
+.pc .ins{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+.pc .ins.clip{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.pc .exp{border:0;background:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;padding:2px 0 0}
+.pc .chk{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:rgba(255,255,255,.6);cursor:pointer;display:grid;place-items:center;font-size:15px;color:var(--muted);flex:none}
+.pc.done .chk{background:var(--done);border-color:var(--done);color:#fff}
+.pfoot{padding:11px 15px;display:flex;gap:9px}
+.pfoot button{flex:1;border:0;border-radius:10px;padding:11px;font-weight:700;font-size:14px;cursor:pointer}
+.pfoot .all{background:var(--accent);color:#fff}
+.pfoot .undo{background:rgba(24,33,43,.07);color:var(--ink)}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="msg" class="glass hide"></div>
+
+<div id="legend" class="glass">
+  <h1 id="h1">Woni 택배</h1>
+  <div class="lg"><span class="d" style="background:var(--pp)"></span><span id="lgPP">Предоплата</span></div>
+  <div class="lg"><span class="d" style="background:var(--cc)"></span><span id="lgCC">Наложка</span></div>
+  <div class="lg"><span class="d" style="background:var(--part)"></span><span id="lgPART">Частичная</span></div>
+  <div class="lg"><span class="d" style="background:var(--cr)"></span><span id="lgCR">Кредит</span></div>
+  <div class="lg"><span class="d" style="background:var(--etc)"></span><span id="lgETC">Прочее</span></div>
+  <div class="lg"><span class="d" style="background:var(--done)"></span><span id="lgDONE">Доставлено</span></div>
+</div>
+
+<div id="prog" class="glass">
+  <div class="big" id="progBig">0/0</div>
+  <div class="sm" id="progSm">доставлено</div>
+</div>
+
+<button id="reset" class="glass">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+  <span id="resetL">Сбросить тест</span>
+</button>
+
+<script src="buildings.js"></script>
+<script src="parcels.js"></script>
+<script>
+const KAKAO_KEY='53f83a531954055ca29efd3e8a0d1a45';
+const DONE_KEY='woni-test-done-v1';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let msgT;function msg(t,err,ms){const m=$('msg');m.textContent=t;m.className='glass'+(err?' err':'');clearTimeout(msgT);if(ms)msgT=setTimeout(()=>m.classList.add('hide'),ms)}
+
+const I18N={
+ ru:{h1:'Woni 택배',pp:'Предоплата',cc:'Наложка',part:'Частичная',cr:'Кредит',etc:'Прочее',done:'Доставлено',
+     deliveredN:'доставлено',reset:'Сбросить тест',sdk_fail:'Карта не загрузилась. Проверь интернет.',
+     hello:'Нажми на точку, чтобы увидеть посылки в доме.',payL:{PP:'선불',CC:'착불',PART:'부분',CR:'신용',ETC:'기타'},
+     won:'₩',deliverAll:'Доставить всё',undoAll:'Вернуть всё',more:'Развернуть',less:'Свернуть',
+     noAddr:'Адрес не найден',locale:'ru-RU'},
+ ko:{h1:'Woni 택배',pp:'선불',cc:'착불',part:'부분결제',cr:'신용',etc:'기타',done:'배송완료',
+     deliveredN:'배송완료',reset:'테스트 초기화',sdk_fail:'지도를 불러오지 못했습니다. 인터넷을 확인하세요.',
+     hello:'점을 눌러 건물의 택배를 확인하세요.',payL:{PP:'선불',CC:'착불',PART:'부분',CR:'신용',ETC:'기타'},
+     won:'원',deliverAll:'전체 배송완료',undoAll:'전체 취소',more:'더보기',less:'접기',
+     noAddr:'주소 없음',locale:'ko-KR'}};
+let LANG=store.get('woni-lang',null)||((navigator.language||'').toLowerCase().startsWith('ko')?'ko':'ru');
+const T=I18N[LANG];
+function applyLang(){
+  document.documentElement.lang=LANG;
+  $('h1').textContent=T.h1;$('lgPP').textContent=T.pp;$('lgCC').textContent=T.cc;$('lgPART').textContent=T.part;
+  $('lgCR').textContent=T.cr;$('lgETC').textContent=T.etc;$('lgDONE').textContent=T.done;$('resetL').textContent=T.reset;
+}
+
+const PAY_COLOR={PP:'#2f9e44',CC:'#e03131',PART:'#f08c00',CR:'#1c7ed6',ETC:'#7048e8'};
+const PAY_PRIORITY=['CC','PART','CR','ETC','PP'];
+const won=n=>n.toLocaleString(T.locale);
+
+let delivered=new Set(store.get(DONE_KEY,[]));
+const saveDone=()=>store.set(DONE_KEY,[...delivered]);
+
+const sdk=document.createElement('script');
+sdk.src='https://dapi.kakao.com/v2/maps/sdk.js?appkey='+KAKAO_KEY+'&libraries=services&autoload=false';
+sdk.onload=()=>kakao.maps.load(init);
+sdk.onerror=()=>msg(T.sdk_fail,true);
+document.head.appendChild(sdk);
+
+let map;
+const LL=p=>new kakao.maps.LatLng(p[0],p[1]);
+
+const buildings=[];
+function loadBuildings(){
+  (window.VWORLD_BUILDINGS||[]).forEach(b=>{
+    let a=90,c=180,d=-90,e=-180;
+    b.path.forEach(([la,ln])=>{a=Math.min(a,la);c=Math.min(c,ln);d=Math.max(d,la);e=Math.max(e,ln)});
+    buildings.push({path:b.path,bb:[a,c,d,e],rd:b.rd,no:b.no,fl:b.fl});
+  });
+}
+function inPoly(lat,lng,path){let ins=false;for(let i=0,j=path.length-1;i<path.length;j=i++){const[yi,xi]=path[i],[yj,xj]=path[j];
+  if((yi>lat)!==(yj>lat)&&lng<(xj-xi)*(lat-yi)/(yj-yi)+xi)ins=!ins}return ins}
+function buildingAt(lat,lng){let best=null,area=1e9;
+  for(const b of buildings){const[a,c,d,e]=b.bb;if(lat<a||lat>d||lng<c||lng>e)continue;
+    if(inPoly(lat,lng,b.path)){const ar=(d-a)*(e-c);if(ar<area){area=ar;best=b}}}return best}
+function centroid(path){let la=0,ln=0;path.forEach(p=>{la+=p[0];ln+=p[1]});return[la/path.length,ln/path.length]}
+
+const groups=[];
+function buildGroups(){
+  const byBld=new Map();
+  (window.MOCK_PARCELS||[]).forEach(p=>{
+    const b=buildingAt(p.lat,p.lng);
+    const key=b?(b.rd+'|'+b.no):('pt:'+p.lat.toFixed(5)+','+p.lng.toFixed(5));
+    if(!byBld.has(key))byBld.set(key,{bld:b,parcels:[]});
+    byBld.get(key).parcels.push(p);
+  });
+  for(const g of byBld.values()){
+    g.at=g.bld?centroid(g.bld.path):[g.parcels[0].lat,g.parcels[0].lng];
+    groups.push(g);
+  }
+}
+
+let poly=null,pins=[],pop=null,curG=null;
+function allDone(g){return g.parcels.every(p=>delivered.has(p.id))}
+function pinColor(g){
+  if(allDone(g))return 'var(--done)';
+  const live=g.parcels.filter(p=>!delivered.has(p.id)).map(p=>p.payType);
+  for(const t of PAY_PRIORITY)if(live.includes(t))return PAY_COLOR[t];
+  return PAY_COLOR.PP;
+}
+function drawPins(){
+  pins.forEach(o=>o.setMap(null));pins=[];
+  groups.forEach(g=>{
+    const el=document.createElement('div');
+    el.className='pin'+(allDone(g)?' done':'');
+    el.style.background=pinColor(g);
+    el.textContent=g.parcels.length;
+    el.onclick=ev=>{ev.stopPropagation();openPop(g)};
+    const ov=new kakao.maps.CustomOverlay({map,position:LL(g.at),content:el,yAnchor:.5,xAnchor:.5,zIndex:5,clickable:true});
+    ov.setMap(map);pins.push(ov);
+  });
+}
+function highlight(g){
+  if(poly){poly.setMap(null);poly=null}
+  if(!g.bld)return;
+  const done=allDone(g);
+  poly=new kakao.maps.Polygon({map,path:g.bld.path.map(LL),strokeWeight:3,
+    strokeColor:done?'#9aa4ad':'#1f4fd1',strokeOpacity:1,
+    fillColor:done?'#9aa4ad':'#1f4fd1',fillOpacity:done?.18:.22,zIndex:4});
+}
+function updateProgress(){
+  const total=(window.MOCK_PARCELS||[]).length;
+  $('progBig').textContent=delivered.size+'/'+total;
+  $('progSm').textContent=T.deliveredN;
+}
+
+function toggleOne(p){delivered.has(p.id)?delivered.delete(p.id):delivered.add(p.id);saveDone();afterChange()}
+function setAll(g,on){g.parcels.forEach(p=>on?delivered.add(p.id):delivered.delete(p.id));saveDone();afterChange()}
+function afterChange(){drawPins();updateProgress();if(curG){highlight(curG);renderPop(curG)}}
+
+function payBadge(p){const c=PAY_COLOR[p.payType];const lbl=T.payL[p.payType];
+  let cash='';
+  if(p.payType==='CC')cash=`<span class="cash" style="color:${c}">${T.won}${won(p.amount)}</span>`;
+  else if(p.payType==='PART')cash=`<span class="cash" style="color:${c}">${T.won}${won(p.amount)}/${won(p.total)}</span>`;
+  return `<span class="pay" style="background:${c}">${lbl}</span>${cash}`;
+}
+function openPop(g){curG=g;highlight(g);renderPop(g);
+  const pt=map.getProjection().containerPointFromCoords(LL(g.at));
+  if(pt.y<300)map.panBy(0,pt.y-300);
+}
+function renderPop(g){
+  if(pop)pop.setMap(null);
+  const b=g.bld;const el=document.createElement('div');el.className='pop';
+  const rd=b?(b.rd+' '+b.no):T.noAddr;
+  const rows=g.parcels.map((p,i)=>{
+    const done=delivered.has(p.id);
+    const longIns=(p.instr||'').length>14;
+    return `<div class="pc${done?' done':''}" data-i="${i}">
+      <span class="dot" style="background:${done?'var(--done)':PAY_COLOR[p.payType]}"></span>
+      <div class="mid">
+        <div class="unit">${esc(p.dtl)} ${payBadge(p)}</div>
+        ${p.instr?`<div class="ins${longIns?' clip':''}" data-ins>${esc(p.instr)}</div>${longIns?`<button class="exp" data-exp>${T.more}</button>`:''}`:''}
+      </div>
+      <button class="chk" data-chk aria-label="deliver">${done?'✓':'○'}</button>
+    </div>`;
+  }).join('');
+  const everyDone=allDone(g);
+  el.innerHTML=`<button class="x" aria-label="close">✕</button>
+    <div class="phead"><div class="rd">${esc(rd)}</div></div>
+    <div class="plist">${rows}</div>
+    <div class="pfoot">
+      ${everyDone?`<button class="undo" data-undoall>${T.undoAll}</button>`:`<button class="all" data-all>${T.deliverAll}</button>`}
+    </div>`;
+  ['click','mousedown','touchstart','touchend','wheel','pointerdown','dblclick'].forEach(ev=>el.addEventListener(ev,e=>e.stopPropagation()));
+  el.querySelector('.x').onclick=closePop;
+  el.querySelectorAll('.pc').forEach(row=>{
+    const i=+row.dataset.i,p=g.parcels[i];
+    row.querySelector('[data-chk]').onclick=()=>toggleOne(p);
+    const exp=row.querySelector('[data-exp]');
+    if(exp)exp.onclick=()=>{const ins=row.querySelector('[data-ins]');const clip=ins.classList.toggle('clip');exp.textContent=clip?T.more:T.less};
+  });
+  const allBtn=el.querySelector('[data-all]');if(allBtn)allBtn.onclick=()=>setAll(g,true);
+  const undoBtn=el.querySelector('[data-undoall]');if(undoBtn)undoBtn.onclick=()=>setAll(g,false);
+  pop=new kakao.maps.CustomOverlay({map,position:LL(g.at),content:el,yAnchor:1,zIndex:10,clickable:true});
+  pop.setMap(map);
+}
+function closePop(){if(pop){pop.setMap(null);pop=null}if(poly){poly.setMap(null);poly=null}curG=null}
+
+function init(){
+  applyLang();
+  loadBuildings();buildGroups();
+  map=new kakao.maps.Map($('map'),{center:new kakao.maps.LatLng(35.20755,129.00615),level:3});
+  kakao.maps.event.addListener(map,'click',closePop);
+  const bnd=new kakao.maps.LatLngBounds();
+  groups.forEach(g=>bnd.extend(LL(g.at)));
+  if(groups.length)map.setBounds(bnd,90,90,90,90);
+  drawPins();updateProgress();
+  msg(T.hello,false,5000);
+}
+$('reset').onclick=()=>{delivered.clear();saveDone();closePop();drawPins();updateProgress();};
+</script>
+</body>
+</html>
