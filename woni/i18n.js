@@ -40,7 +40,15 @@ const I18N={
    changes:'Меняется: {x}',bold:'Ж',italic:'К',horiz:'Обычно',vert:'Сверху вниз',spacing:'Между буквами',text_color:'Цвет текста',opacity:'Прозрачность',
    color:'Цвет',bright:'Яркость',tg_shape:'фигура',tg_arrow:'стрелка',tg_zone:'граница',tg_new:'новые фигуры и стрелки',tg_selshape:'выбранная фигура',tg_newshape:'новые фигуры',
    // search
-   search_open:'Поиск',search_ph:'Адрес, дом или место',search:'Поиск',search_close:'Закрыть поиск',nothing:'На участке ничего не найдено',tag_note:'заметка'
+   search_open:'Поиск',search_ph:'Адрес, дом или место',search:'Поиск',search_close:'Закрыть поиск',nothing:'На участке ничего не найдено',tag_note:'заметка',
+   // phase 1: delete / refresh / colors / history / counter
+   del_parcel:'Удалить посылку',del_parcel_q:'Точно удалить посылку?',
+   refresh_parcels:'Обновить посылки',refreshing:'Обновляю посылки…',refreshed:'Посылки обновлены',
+   colors_title:'Цвета посылок',colors_hint:'Нажми на кружок, чтобы изменить цвет категории.',reset_color:'Сбросить цвет',
+   history:'История',history_prev:'Предыдущий месяц',history_next:'Следующий месяц',
+   history_locked:'История будет доступна после входа в аккаунт. Пока это превью.',
+   hist_search_ph:'Поиск: адрес, квартира, заметка',no_deliv_day:'В этот день доставок нет',pick_day:'Выбери день в календаре',
+   deliveries_n:'доставок',back:'Назад'
  },
  ko:{
    h1:'Woni 택배',pp:'선불',cc:'착불',part:'부분결제',cr:'신용',etc:'기타',done:'배송완료',
@@ -69,7 +77,14 @@ const I18N={
    shapes:'도형',shapes_hint:'도형을 고르고 지도를 누르세요. 글자 수에 따라 도형 너비가 늘어납니다.',arrows:'화살표',font:'글꼴',
    changes:'변경 대상: {x}',bold:'굵게',italic:'기울임',horiz:'가로쓰기',vert:'세로쓰기',spacing:'자간',text_color:'글자 색',opacity:'투명도',
    color:'색상',bright:'밝기',tg_shape:'도형',tg_arrow:'화살표',tg_zone:'구역 경계',tg_new:'새 도형과 화살표',tg_selshape:'선택한 도형',tg_newshape:'새 도형',
-   search_open:'검색',search_ph:'주소, 건물 또는 장소',search:'검색',search_close:'검색 닫기',nothing:'구역 안에서 찾은 결과가 없습니다',tag_note:'메모'
+   search_open:'검색',search_ph:'주소, 건물 또는 장소',search:'검색',search_close:'검색 닫기',nothing:'구역 안에서 찾은 결과가 없습니다',tag_note:'메모',
+   del_parcel:'택배 삭제',del_parcel_q:'이 택배를 삭제할까요?',
+   refresh_parcels:'택배 새로고침',refreshing:'택배를 새로고침하는 중…',refreshed:'택배를 새로고침했습니다',
+   colors_title:'택배 색상',colors_hint:'원을 눌러 분류별 색상을 변경하세요.',reset_color:'색상 초기화',
+   history:'배송 이력',history_prev:'이전 달',history_next:'다음 달',
+   history_locked:'배송 이력은 로그인 후 이용할 수 있습니다. 지금은 미리보기입니다.',
+   hist_search_ph:'검색: 주소, 호수, 메모',no_deliv_day:'이 날에는 배송이 없습니다',pick_day:'달력에서 날짜를 선택하세요',
+   deliveries_n:'건 배송',back:'뒤로'
  }
 };
 let LANG=store.get('woni-lang',null)||((navigator.language||'').toLowerCase().startsWith('ko')?'ko':'ru');

@@ -2,16 +2,44 @@
    Loaded after i18n.js, buildings.js, parcels.js. draw.js (editor) loads after this. */
 const KAKAO_KEY='53f83a531954055ca29efd3e8a0d1a45';
 const DONE_KEY='woni-test-done-v1',NOTES_KEY='woni-notes-v1';
+const REMOVED_KEY='woni-removed-v1',COLORS_KEY='woni-colors-v1',HIST_KEY='woni-history-v1';
 const AREA_C=[35.20755,129.00615],AREA_R=1500;
 
-const PAY_COLOR={PP:'#2f9e44',CC:'#e03131',PART:'#f08c00',CR:'#1c7ed6',ETC:'#7048e8'};
+/* parcel colours: editable in account, persisted to woni-colors-v1 */
+const PAY_DEFAULT={PP:'#2f9e44',CC:'#e03131',PART:'#f08c00',CR:'#1c7ed6',ETC:'#7048e8'};
+const DONE_DEFAULT='#9aa4ad';
+let _savedColors=store.get(COLORS_KEY,{})||{};
+let PAY_COLOR=Object.assign({},PAY_DEFAULT);
+Object.keys(PAY_COLOR).forEach(k=>{if(/^#[0-9a-f]{6}$/i.test(_savedColors[k]))PAY_COLOR[k]=_savedColors[k]});
+let DONE_COLOR=/^#[0-9a-f]{6}$/i.test(_savedColors.DONE)?_savedColors.DONE:DONE_DEFAULT;
+const saveColors=()=>store.set(COLORS_KEY,{...PAY_COLOR,DONE:DONE_COLOR});
 const PAY_PRIORITY=['CC','PART','CR','ETC','PP'];
 const won=n=>Number(n).toLocaleString(T.locale);
 
 let delivered=new Set(store.get(DONE_KEY,[]));
 const saveDone=()=>store.set(DONE_KEY,[...delivered]);
+let removed=new Set(store.get(REMOVED_KEY,[]));
+const saveRemoved=()=>store.set(REMOVED_KEY,[...removed]);
 let notes=store.get(NOTES_KEY,{});
 const saveNotes=()=>store.set(NOTES_KEY,notes);
+
+/* delivery history snapshots (woni-history-v1): logged on every deliver toggle */
+let history=store.get(HIST_KEY,[]);
+const saveHistory=()=>store.set(HIST_KEY,history);
+const todayKST=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Seoul'});
+function logDeliver(p,on){
+  const d=todayKST(),i=history.findIndex(h=>h.id===p.id&&h.date===d);
+  if(on){if(i<0){history.push({id:p.id,date:d,at:Date.now(),road:p.road||'',dtl:p.dtl||'',payType:p.payType,amount:p.amount||0,total:p.total||0,instr:p.instr||''});saveHistory();}}
+  else if(i>=0){history.splice(i,1);saveHistory();}
+}
+window.getHistory=()=>history;
+window.loggedIn=false;
+/* colour accessors for the account colour panel */
+window.getColors=()=>({...PAY_COLOR,DONE:DONE_COLOR});
+window.setColor=(k,hex)=>{if(!/^#[0-9a-f]{6}$/i.test(hex))return;if(k==='DONE')DONE_COLOR=hex;else if(PAY_COLOR[k]!=null)PAY_COLOR[k]=hex;else return;saveColors();applyColorVars();drawPins();if(curG){highlight(curG);renderPop(curG)}};
+function applyColorVars(){const s=document.documentElement.style;
+  s.setProperty('--pp',PAY_COLOR.PP);s.setProperty('--cc',PAY_COLOR.CC);s.setProperty('--part',PAY_COLOR.PART);
+  s.setProperty('--cr',PAY_COLOR.CR);s.setProperty('--etc',PAY_COLOR.ETC);s.setProperty('--done',DONE_COLOR);}
 
 let map,geocoder;
 const LL=p=>new kakao.maps.LatLng(p[0],p[1]);
@@ -36,8 +64,10 @@ function centroid(path){let la=0,ln=0;path.forEach(p=>{la+=p[0];ln+=p[1]});retur
 /* ---------- parcel groups per building ---------- */
 const groups=[];
 function buildGroups(){
+  groups.length=0;
   const byBld=new Map();
   (window.MOCK_PARCELS||[]).forEach(p=>{
+    if(removed.has(p.id))return;
     const b=buildingAt(p.lat,p.lng);
     const key=b?(b.rd+'|'+b.no):('pt:'+p.lat.toFixed(5)+','+p.lng.toFixed(5));
     if(!byBld.has(key))byBld.set(key,{bld:b,parcels:[]});
@@ -48,6 +78,17 @@ function buildGroups(){
     groups.push(g);
   }
 }
+/* reload parcel source, prune stale statuses/removals, rebuild pins.
+   test build reuses the static MOCK_PARCELS; the Hanjin fetch will replace it here. */
+function rebuildParcels(){
+  const src=window.MOCK_PARCELS||[],rawIds=new Set(src.map(p=>p.id));
+  [...removed].forEach(id=>{if(!rawIds.has(id))removed.delete(id)});saveRemoved();
+  buildGroups();
+  const live=new Set(src.filter(p=>!removed.has(p.id)).map(p=>p.id));
+  [...delivered].forEach(id=>{if(!live.has(id))delivered.delete(id)});saveDone();
+  drawPins();updateProgress();
+}
+window.refreshParcels=function(){closePop();rebuildParcels();msg(tr('refreshed'),false,2500);};
 function groupFor(b){return groups.find(g=>g.bld===b)||{bld:b,parcels:[],at:centroid(b.path)}}
 function keyOf(g){return g.bld?(g.bld.rd+'|'+g.bld.no):('pt:'+g.at[0].toFixed(5)+','+g.at[1].toFixed(5))}
 
@@ -55,7 +96,7 @@ function keyOf(g){return g.bld?(g.bld.rd+'|'+g.bld.no):('pt:'+g.at[0].toFixed(5)
 let poly=null,pins=[],pop=null,curG=null;
 function allDone(g){return g.parcels.length>0&&g.parcels.every(p=>delivered.has(p.id))}
 function pinColor(g){
-  if(allDone(g))return '#9aa4ad';
+  if(allDone(g))return DONE_COLOR;
   const live=g.parcels.filter(p=>!delivered.has(p.id)).map(p=>p.payType);
   for(const t of PAY_PRIORITY)if(live.includes(t))return PAY_COLOR[t];
   return PAY_COLOR.PP;
@@ -82,16 +123,28 @@ function highlight(g){
   if(!g.bld)return;
   const done=allDone(g);
   poly=new kakao.maps.Polygon({map,path:g.bld.path.map(LL),strokeWeight:3,
-    strokeColor:done?'#9aa4ad':'#1f4fd1',strokeOpacity:1,
-    fillColor:done?'#9aa4ad':'#1f4fd1',fillOpacity:done?.18:.22,zIndex:4});
+    strokeColor:done?DONE_COLOR:'#1f4fd1',strokeOpacity:1,
+    fillColor:done?DONE_COLOR:'#1f4fd1',fillOpacity:done?.18:.22,zIndex:4});
 }
 function updateProgress(){
-  const total=(window.MOCK_PARCELS||[]).length;
-  $('progBig').textContent=delivered.size+'/'+total;
+  const live=(window.MOCK_PARCELS||[]).filter(p=>!removed.has(p.id));
+  const total=live.length,done=live.filter(p=>delivered.has(p.id)).length;
+  $('progBig').textContent=done+'/'+total;
   $('progSm').textContent=T.deliveredN;
 }
-function toggleOne(p){delivered.has(p.id)?delivered.delete(p.id):delivered.add(p.id);saveDone();afterChange()}
-function setAll(g,on){g.parcels.forEach(p=>on?delivered.add(p.id):delivered.delete(p.id));saveDone();afterChange()}
+function toggleOne(p){const on=!delivered.has(p.id);on?delivered.add(p.id):delivered.delete(p.id);logDeliver(p,on);saveDone();afterChange()}
+function setAll(g,on){g.parcels.forEach(p=>{on?delivered.add(p.id):delivered.delete(p.id);logDeliver(p,on)});saveDone();afterChange()}
+function deleteParcel(p){confirmAsk(tr('del_parcel_q'),tr('del'),true,()=>{
+  const b=curG&&curG.bld;removed.add(p.id);saveRemoved();rebuildParcels();
+  const g=b&&groups.find(x=>x.bld===b);if(g&&g.parcels.length)openBuilding(b);else closePop();
+});}
+function confirmAsk(text,okText,danger,onOk){
+  $('cfTxt').textContent=text;const ok=$('cfOk');ok.textContent=okText||tr('ok');ok.className=danger?'pri danger':'pri';
+  $('cfCancel').textContent=tr('cancel');
+  const close=()=>{$('confirm').classList.add('out');document.body.classList.remove('modal')};
+  ok.onclick=()=>{close();onOk&&onOk()};$('cfCancel').onclick=close;$('cfBack').onclick=close;
+  $('confirm').classList.remove('out');document.body.classList.add('modal');
+}
 function afterChange(){drawPins();updateProgress();if(curG){highlight(curG);renderPop(curG)}}
 
 /* ---------- popup ---------- */
@@ -150,7 +203,10 @@ function renderPop(g){
         <div class="mid"><div class="unit">${esc(p.dtl)} ${payBadge(p)}</div>
           ${p.instr?`<div class="ins${longIns?' clip':''}" data-ins>${esc(p.instr)}</div>${longIns?`<button class="exp" data-exp>${T.more}</button>`:''}`:''}
         </div>
-        <button class="chk" data-chk aria-label="deliver">${done?'✓':'○'}</button>
+        <div class="pcbtns">
+          <button class="chk" data-chk aria-label="deliver">${done?'✓':'○'}</button>
+          <button class="del1" data-del aria-label="${esc(T.del_parcel)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+        </div>
       </div>`;
     }).join('');
     const everyDone=allDone(g);
@@ -163,6 +219,7 @@ function renderPop(g){
   el.querySelectorAll('.pc').forEach(row=>{
     const i=+row.dataset.i,p=g.parcels[i];
     row.querySelector('[data-chk]').onclick=()=>toggleOne(p);
+    row.querySelector('[data-del]').onclick=()=>deleteParcel(p);
     const ex=row.querySelector('[data-exp]');
     if(ex)ex.onclick=()=>{const ins=row.querySelector('[data-ins]'),clip=ins.classList.toggle('clip');ex.textContent=clip?T.more:T.less};
   });
@@ -228,6 +285,7 @@ function applyLang(){
 
 /* ---------- boot ---------- */
 function init(){
+  applyColorVars();
   loadBuildings();buildGroups();
   map=new kakao.maps.Map($('map'),{center:new kakao.maps.LatLng(AREA_C[0],AREA_C[1]),level:3});
   geocoder=new kakao.maps.services.Geocoder();

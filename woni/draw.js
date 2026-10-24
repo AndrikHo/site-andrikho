@@ -32,6 +32,11 @@ function restore(json){const keepSel=sel&&sel.id;D=JSON.parse(json);sel=keepSel?
 function updHist(){const u=$('hUndo'),r=$('hRedo');if(u)u.disabled=!hist.length;if(r)r.disabled=!fut.length;}
 const newId=()=>'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
+/* zoom scaling: drawn shapes/badges/zone points grow & shrink with the map,
+   clamped so they never vanish or swallow the screen. factor = 2^(base-level). */
+const BASE_LEVEL=3,ZF_MIN=.55,ZF_MAX=2.6;let zf=1;
+function computeZf(){if(!map)return;zf=Math.max(ZF_MIN,Math.min(ZF_MAX,Math.pow(2,BASE_LEVEL-map.getLevel())));}
+
 /* ---------- edit mode, tools, panels ---------- */
 let editing=false,tool=null,sel=null,panel=null,arrowStart=null,arrowTmp=null,txtCtx=null;
 window.editing=false;
@@ -201,7 +206,7 @@ function styleShape(el,it){
   const F=it.font||defFont();
   el.className='shp '+it.form+(F.vert?' vert':'')+(sel===it?' sel':'');
   el.style.setProperty('--bg',it.fill);el.style.background=it.fill;el.style.opacity=A1(it.a);
-  el.style.fontSize=(14*(it.s||1)).toFixed(1)+'px';el.style.fontFamily=FONT_CSS[F.f]||FONT_CSS.sys;
+  el.style.fontSize=(14*(it.s||1)*zf).toFixed(1)+'px';el.style.fontFamily=FONT_CSS[F.f]||FONT_CSS.sys;
   el.style.fontWeight=F.b?'700':'400';el.style.fontStyle=F.i?'italic':'normal';el.style.letterSpacing=(F.ls||0)+'px';
   el.style.color=hexA(F.c||'#ffffff',A1(F.a));el.textContent=it.t||'';
 }
@@ -228,6 +233,7 @@ function drawItem(it){
         strokeStyle:it.type==='dash'?'dashdot':'solid'}));
     }
     if(it.type==='num'){[['n1',it.a],['n2',it.b]].forEach(([k,p])=>{if(!it[k])return;const el=document.createElement('div');el.className='numb';el.style.background=c;el.style.opacity=A1(it.o);el.textContent=it[k];
+      el.style.fontSize=(12.5*zf).toFixed(1)+'px';el.style.minWidth=(24*zf).toFixed(1)+'px';el.style.height=(24*zf).toFixed(1)+'px';
       objs.push(new kakao.maps.CustomOverlay({map,position:LL(p),content:el,xAnchor:k==='n1'?1.15:-.15,yAnchor:.5,zIndex:6}));});}
   }
   objsOf.set(it.id,objs);
@@ -238,7 +244,7 @@ function drawAll(){
   vtx.forEach(m=>m.setMap(null));vtx=[];if(zoneShape){zoneShape.setMap(null);zoneShape=null;}
   const z=D.zoneStyle;
   if(D.zone.length>1)zoneShape=new kakao.maps.Polygon({map,path:D.zone.map(LL),strokeWeight:4,strokeColor:z.c,strokeStyle:'dash',strokeOpacity:.95*A1(z.a),fillColor:z.c,fillOpacity:(tool==='zone'?.08:.04)*A1(z.a),zIndex:2});
-  if(editing&&tool==='zone'){const img=new kakao.maps.MarkerImage('data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="8" fill="#fff" stroke="${z.c}" stroke-width="4"/></svg>`),new kakao.maps.Size(26,26),{offset:new kakao.maps.Point(13,13)});
+  if(editing&&tool==='zone'){const vs=Math.round(26*zf),vh=vs/2;const img=new kakao.maps.MarkerImage('data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><circle cx="13" cy="13" r="8" fill="#fff" stroke="${z.c}" stroke-width="4"/></svg>`),new kakao.maps.Size(vs,vs),{offset:new kakao.maps.Point(vh,vh)});
     D.zone.forEach((p,i)=>{const m=new kakao.maps.Marker({map,position:LL(p),draggable:true,image:img,zIndex:7});
       kakao.maps.event.addListener(m,'dragstart',()=>snap());
       kakao.maps.event.addListener(m,'dragend',()=>{const q=m.getPosition();D.zone[i]=[r6(q.getLat()),r6(q.getLng())];saveD();drawAll();});vtx.push(m);});}
@@ -318,7 +324,7 @@ function initGestures(){
 }
 function resizeSel(v){
   if(!sel)return;
-  if(sel.k==='shape'){sel.s=+Math.max(.5,Math.min(4,v)).toFixed(2);const ov=ovOf.get(sel.id),el=ov&&ov.getContent?ov.getContent():document.querySelector('.shp.sel');if(el)el.style.fontSize=(14*sel.s).toFixed(1)+'px';}
+  if(sel.k==='shape'){sel.s=+Math.max(.5,Math.min(4,v)).toFixed(2);const ov=ovOf.get(sel.id),el=ov&&ov.getContent?ov.getContent():document.querySelector('.shp.sel');if(el)el.style.fontSize=(14*sel.s*zf).toFixed(1)+'px';}
   else{sel.w=+Math.max(2,Math.min(30,v)).toFixed(1);drawItem(sel);}
 }
 
@@ -373,5 +379,6 @@ window.drawApplyLang=function(){
   document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',b.dataset.l===LANG));
   if(D){refreshUI();if(panel)renderPanel();}
 };
-window.drawInit=function(){initGestures();drawAll();updHist();};
+window.drawInit=function(){computeZf();initGestures();drawAll();updHist();
+  kakao.maps.event.addListener(map,'zoom_changed',()=>{computeZf();drawAll();});};
 updHist();

@@ -32,7 +32,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .isl.out-t{transform:translate(-50%,calc(-100% - 40px - var(--st)));opacity:0;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.isl{transition:opacity .2s}}
 
-#msg{position:fixed;left:50%;top:calc(var(--st) + 12px);transform:translateX(-50%);max-width:calc(100vw - 32px);z-index:40;font-size:13px;color:var(--muted);padding:8px 14px;border-radius:12px;transition:opacity .3s}
+#msg{position:fixed;left:50%;top:calc(var(--st) + 66px);transform:translateX(-50%);max-width:calc(100vw - 32px);z-index:40;font-size:13px;color:var(--muted);padding:8px 14px;border-radius:12px;transition:opacity .3s;text-align:center}
 #msg.err{color:var(--danger)}
 #msg.hide{opacity:0;pointer-events:none}
 
@@ -44,7 +44,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 #prog{position:fixed;right:calc(var(--sr) + 12px);top:calc(var(--st) + 12px);z-index:18;padding:9px 13px;border-radius:14px;text-align:right;transition:opacity .3s}
 #prog .big{font-size:18px;font-weight:800;line-height:1}
 #prog .sm{font-size:11px;color:var(--muted);margin-top:3px}
-#stab{position:fixed;right:calc(var(--sr) + 12px);top:calc(var(--st) + 66px);z-index:18;width:46px;height:46px;border:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;transition:opacity .3s}
+#stab{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 12px);z-index:19;width:46px;height:46px;border:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;transition:opacity .3s}
 #stab svg{width:22px;height:22px;color:var(--ink)}
 #stab.hide{opacity:0;pointer-events:none}
 body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
@@ -174,8 +174,12 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .pc .ins{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.4}
 .pc .ins.clip{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .pc .exp{border:0;background:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;padding:2px 0 0}
+.pcbtns{display:flex;flex-direction:column;gap:6px;align-items:center}
 .pc .chk{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:rgba(255,255,255,.6);cursor:pointer;display:grid;place-items:center;font-size:15px;color:var(--muted);flex:none}
 .pc.done .chk{background:var(--done);border-color:var(--done);color:#fff}
+.pc .del1{width:30px;height:30px;border-radius:50%;border:0;background:none;cursor:pointer;display:grid;place-items:center;color:var(--muted);flex:none}
+.pc .del1 svg{width:17px;height:17px}
+.pc .del1:hover{background:rgba(201,42,42,.1);color:var(--danger)}
 .pfoot{padding:11px 15px;display:flex;gap:9px}
 .pfoot button{flex:1;border:0;border-radius:10px;padding:11px;font-weight:700;font-size:14px;cursor:pointer}
 .pfoot .all{background:var(--accent);color:#fff}
@@ -207,6 +211,58 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .shp.sel{outline:3px solid #fff;box-shadow:0 0 0 6px rgba(31,79,209,.85),0 4px 12px rgba(0,0,0,.35)}
 .shp.lift{transform:translateY(-4px) scale(1.06)}
 .numb{min-width:24px;height:24px;padding:0 6px;border-radius:12px;display:grid;place-items:center;font:800 12.5px system-ui,sans-serif;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);pointer-events:none}
+
+/* confirm modal (delete a parcel etc.) */
+#confirm{position:fixed;inset:0;z-index:60;display:grid;place-items:center;transition:opacity .22s}
+#confirm.out{opacity:0;pointer-events:none}
+#confirm .mback{position:absolute;inset:0;background:rgba(16,22,30,.42);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+#confirm .mcard{position:relative;width:min(340px,calc(100vw - 48px));border-radius:18px;padding:18px 18px 14px;display:flex;flex-direction:column;gap:14px;transform:translateY(0);transition:transform .22s var(--ease)}
+#confirm.out .mcard{transform:translateY(14px)}
+#confirm #cfTxt{font-size:15.5px;font-weight:600;line-height:1.4}
+#confirm .acts{display:flex;gap:9px;justify-content:flex-end}
+#confirm .acts button{border:1px solid var(--line);background:rgba(255,255,255,.7);border-radius:11px;padding:10px 16px;cursor:pointer;font-size:14.5px}
+#confirm .acts button.pri{border-color:transparent;background:var(--accentG);color:#fff;font-weight:600}
+#confirm .acts button.pri.danger{background:var(--danger)}
+body.modal{overflow:hidden}
+
+/* account: feature nav + sub-sheets (colours, history) */
+.accnav{justify-content:stretch!important}
+.accnav button{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.65);border-radius:11px;padding:11px 8px;cursor:pointer;font-size:13.5px;font-weight:600}
+.accnav button:hover{background:rgba(31,79,209,.08)}
+.sheet .small{font-size:12.5px;color:var(--muted);margin:0}
+/* colour list rows */
+#colList{display:flex;flex-direction:column;gap:2px}
+.colrow{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.colrow:last-child{border-bottom:0}
+.colrow .cc{width:30px;height:30px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.18);flex:none}
+.colrow .cn{font-weight:600;font-size:14.5px}
+.colrow .chev{margin-left:auto;color:var(--muted);font-size:18px}
+/* colour editor (reuses the HSV wheel look) */
+.coledit{display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.coledit .wheelBox{align-self:center}
+.coledit .hx{align-self:center;font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted)}
+/* history calendar */
+.cal{display:flex;flex-direction:column;gap:8px}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.calhead .mlbl{font-weight:800;font-size:15.5px;text-transform:capitalize}
+.calhead button{width:40px;height:40px;border:0;background:rgba(24,33,43,.05);border-radius:50%;cursor:pointer;font-size:18px;display:grid;place-items:center}
+.caldow,.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.caldow span{text-align:center;font-size:11px;color:var(--muted);font-weight:700;padding:2px 0}
+.calgrid .cell{position:relative;aspect-ratio:1;border:0;background:rgba(255,255,255,.5);border-radius:10px;cursor:pointer;font-size:13.5px;display:grid;place-items:center;color:var(--ink)}
+.calgrid .cell.empty{background:none;cursor:default}
+.calgrid .cell.today{box-shadow:0 0 0 2px var(--accent) inset}
+.calgrid .cell.sel{background:var(--accentG);color:#fff;font-weight:700}
+.calgrid .cell .bdg{position:absolute;top:3px;right:3px;min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:var(--note);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;line-height:1}
+.calgrid .cell.sel .bdg{background:#fff;color:var(--accent)}
+.histlist{display:flex;flex-direction:column;gap:7px;max-height:34vh;overflow:auto;margin-top:4px}
+.histlist .he{display:grid;grid-template-columns:1fr auto;gap:4px 8px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:rgba(255,255,255,.55)}
+.histlist .he .u{font-weight:700;font-size:14px}
+.histlist .he .r{grid-column:1/2;font-size:12.5px;color:var(--muted)}
+.histlist .he .tm{color:var(--muted);font-size:12px;align-self:center}
+.histlist .he .pay{font-size:10.5px;font-weight:700;color:#fff;border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.histlist .none{color:var(--muted);font-size:13px;padding:10px 2px}
+.histsearch{font:inherit;font-size:15px;border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(255,255,255,.8);width:100%;margin-top:8px}
+.histlock{font-size:12.5px;color:var(--note);background:rgba(232,89,12,.08);border:1px solid rgba(232,89,12,.25);border-radius:10px;padding:9px 11px;margin:0}
 </style>
 </head>
 <body>
@@ -276,6 +332,11 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
     <button class="pri" id="loginBtn" disabled>Войти</button>
   </div>
   <div class="row langrow"><span id="langL">Язык</span><div class="seg" id="langSeg"><button data-l="ru">Русский</button><button data-l="ko">한국어</button></div></div>
+  <div class="acts accnav">
+    <button id="accRefresh">Обновить посылки</button>
+    <button id="accColors">Цвета посылок</button>
+    <button id="accHistory">История</button>
+  </div>
   <p id="accP">Логин для всех курьеров появится позже. Сейчас рисунки и заметки хранятся только на этом телефоне. Сохрани копию, чтобы не потерять их или перенести на другой телефон.</p>
   <div class="acts">
     <button class="danger" id="accClear">Удалить все рисунки</button>
@@ -286,10 +347,35 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
   <input type="file" id="impFile" accept="application/json,.json" hidden>
 </div>
 
+<!-- colour settings sheet -->
+<div id="colorSheet" class="isl glass sheet out-b">
+  <h4 id="colH">Цвета посылок</h4>
+  <p class="small" id="colHint">Нажми на кружок, чтобы изменить цвет категории.</p>
+  <div id="colList"></div>
+  <div class="acts"><button id="colClose">Назад</button></div>
+</div>
+
+<!-- delivery history sheet -->
+<div id="histSheet" class="isl glass sheet out-b">
+  <h4 id="histH">История</h4>
+  <div id="histBody"></div>
+  <div class="acts"><button id="histClose">Назад</button></div>
+</div>
+
+<!-- confirm modal -->
+<div id="confirm" class="out">
+  <div class="mback" id="cfBack"></div>
+  <div class="mcard glass">
+    <div id="cfTxt"></div>
+    <div class="acts"><button id="cfCancel">Отмена</button><button class="pri" id="cfOk">Удалить</button></div>
+  </div>
+</div>
+
 <script src="i18n.js"></script>
 <script src="buildings.js"></script>
 <script src="parcels.js"></script>
 <script src="app.js"></script>
 <script src="draw.js"></script>
+<script src="account.js"></script>
 </body>
 </html>
