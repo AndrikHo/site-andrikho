@@ -59,7 +59,16 @@ function inPoly(lat,lng,path){let ins=false;for(let i=0,j=path.length-1;i<path.l
 function buildingAt(lat,lng){let best=null,area=1e9;
   for(const b of buildings){const[a,c,d,e]=b.bb;if(lat<a||lat>d||lng<c||lng>e)continue;
     if(inPoly(lat,lng,b.path)){const ar=(d-a)*(e-c);if(ar<area){area=ar;best=b}}}return best}
-function centroid(path){let la=0,ln=0;path.forEach(p=>{la+=p[0];ln+=p[1]});return[la/path.length,ln/path.length]}
+function centroid(path){
+  // area-weighted polygon centroid (true geometric centre); path = [[lat,lng],...]
+  let A=0,cx=0,cy=0;
+  for(let i=0,n=path.length;i<n;i++){
+    const[y0,x0]=path[i],[y1,x1]=path[(i+1)%n];
+    const cr=x0*y1-x1*y0;A+=cr;cx+=(x0+x1)*cr;cy+=(y0+y1)*cr;
+  }
+  if(Math.abs(A)<1e-12){let la=0,ln=0;path.forEach(p=>{la+=p[0];ln+=p[1]});return[la/path.length,ln/path.length];}
+  A*=0.5;return[cy/(6*A),cx/(6*A)];
+}
 
 /* ---------- parcel groups per building ---------- */
 const groups=[];
@@ -102,9 +111,9 @@ function pinColor(g){
   return PAY_COLOR.PP;
 }
 function pinSVG(color,count){
-  return `<svg width="24" height="28" viewBox="0 0 24 28" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2 a10 10 0 0 0 -10 10 c0 5.4 4.4 9.6 8.8 14.4 a1.6 1.6 0 0 1 2.4 0 c4.4 -4.8 8.8 -9 8.8 -14.4 a10 10 0 0 0 -10 -10 z" fill="${color}" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/>
-    <text x="12" y="16" text-anchor="middle" font-size="12.5" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">${count}</text>
+  return `<svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="13" cy="13" r="11" fill="${color}" stroke="#fff" stroke-width="2.2"/>
+    <text x="13" y="17.4" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">${count}</text>
   </svg>`;
 }
 function drawPins(){
@@ -114,7 +123,7 @@ function drawPins(){
     el.className='pin'+(allDone(g)?' done':'');
     el.innerHTML=pinSVG(pinColor(g),g.parcels.length);
     el.onclick=ev=>{ev.stopPropagation();if(window.editing)return;openBuilding(g.bld)};
-    const ov=new kakao.maps.CustomOverlay({map,position:LL(g.at),content:el,yAnchor:1,xAnchor:.5,zIndex:5,clickable:true});
+    const ov=new kakao.maps.CustomOverlay({map,position:LL(g.at),content:el,yAnchor:.5,xAnchor:.5,zIndex:5,clickable:true});
     ov.setMap(map);pins.push(ov);
   });
 }
@@ -123,8 +132,8 @@ function highlight(g){
   if(!g.bld)return;
   const done=allDone(g);
   poly=new kakao.maps.Polygon({map,path:g.bld.path.map(LL),strokeWeight:3,
-    strokeColor:done?DONE_COLOR:'#1f4fd1',strokeOpacity:1,
-    fillColor:done?DONE_COLOR:'#1f4fd1',fillOpacity:done?.18:.22,zIndex:4});
+    strokeColor:done?DONE_COLOR:'#2d8cf0',strokeOpacity:1,
+    fillColor:done?DONE_COLOR:'#2d8cf0',fillOpacity:done?.18:.22,zIndex:4});
 }
 function updateProgress(){
   const live=(window.MOCK_PARCELS||[]).filter(p=>!removed.has(p.id));
@@ -275,8 +284,6 @@ function pick(it){
 /* ---------- language ---------- */
 function applyLang(){
   document.documentElement.lang=LANG;document.title=T.h1;
-  $('h1').textContent=T.h1;$('lgPP').textContent=T.pp;$('lgCC').textContent=T.cc;$('lgPART').textContent=T.part;
-  $('lgCR').textContent=T.cr;$('lgETC').textContent=T.etc;$('lgDONE').textContent=T.done;
   $('sq').placeholder=T.search_ph;$('stab').setAttribute('aria-label',T.search_open);
   if(window.drawApplyLang)window.drawApplyLang();
   updateProgress();

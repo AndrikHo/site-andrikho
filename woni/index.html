@@ -12,7 +12,7 @@
 :root{
   color-scheme:light;
   --glass:rgba(255,255,255,.78);--glass2:rgba(255,255,255,.92);--ink:#16202b;--muted:#5b6672;--line:rgba(24,33,43,.12);
-  --accent:#1f4fd1;--accentG:rgba(31,79,209,.9);--danger:#c92a2a;--note:#e8590c;
+  --accent:#2d8cf0;--accentG:rgba(45,140,240,.95);--danger:#c92a2a;--note:#e8590c;
   --pp:#2f9e44;--cc:#e03131;--part:#f08c00;--cr:#1c7ed6;--etc:#7048e8;--done:#9aa4ad;
   --ease:cubic-bezier(.2,.85,.25,1);--sb:env(safe-area-inset-bottom,0px);--st:env(safe-area-inset-top,0px);
   --sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);
@@ -38,18 +38,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 #msg.err{color:var(--danger)}
 #msg.hide{opacity:0;pointer-events:none}
 
-/* woni chrome: legend, progress, search tab — fade out while editing */
-#legend{position:fixed;left:calc(var(--sl) + 12px);top:calc(var(--st) + 12px);z-index:18;padding:10px 12px;border-radius:14px;max-width:46vw;transition:opacity .3s}
-#legend h1{margin:0 0 7px;font-size:13px;font-weight:800;letter-spacing:.01em}
-#legend .lg{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);line-height:1.9}
-#legend .d{width:11px;height:11px;border-radius:50%;flex:none;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+/* woni chrome: progress, search tab — fade out while editing */
 #prog{position:fixed;right:calc(var(--sr) + 12px);top:calc(var(--st) + 12px);z-index:18;padding:9px 13px;border-radius:14px;text-align:right;transition:opacity .3s}
 #prog .big{font-size:18px;font-weight:800;line-height:1}
 #prog .sm{font-size:11px;color:var(--muted);margin-top:3px}
 #stab{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 12px);z-index:19;width:46px;height:46px;border:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;transition:opacity .3s}
 #stab svg{width:22px;height:22px;color:var(--ink)}
 #stab.hide{opacity:0;pointer-events:none}
-body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
+body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 
 /* search bar slides DOWN from the top */
 #sbar{position:fixed;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);top:calc(var(--st) + 10px);z-index:36;transform:translateY(calc(-100% - 60px - var(--st)));transition:transform .35s var(--ease);pointer-events:none}
@@ -61,7 +57,7 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 #sugg:empty{display:none}
 #sugg li{padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--line)}
 #sugg li:last-child{border-bottom:0}
-#sugg li:hover{background:rgba(31,79,209,.08)}
+#sugg li:hover{background:rgba(45,140,240,.08)}
 #sugg .nm{font-weight:600}
 #sugg .ad{font-size:12.5px;color:var(--muted);margin-top:2px}
 #sugg .tg{font-size:10.5px;font-weight:700;color:var(--note);margin-left:6px}
@@ -91,7 +87,7 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 #fly h3{margin:0;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
 .opt{border:1px solid var(--line);background:rgba(255,255,255,.55);border-radius:12px;padding:8px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--ink);min-height:70px;justify-content:center}
-.opt.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset;background:rgba(31,79,209,.07)}
+.opt.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset;background:rgba(45,140,240,.07)}
 .opt svg{width:52px;height:30px}
 .row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
 .row input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
@@ -150,7 +146,7 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .loginBox .pri{border:0;background:var(--accentG);color:#fff;font-weight:600;border-radius:10px;padding:11px;font-size:14px;opacity:.55}
 
 /* teardrop pin */
-.pin{transform:translate(-50%,-100%);cursor:pointer;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35));-webkit-user-select:none;user-select:none;line-height:0}
+.pin{cursor:pointer;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3));-webkit-user-select:none;user-select:none;line-height:0}
 .pin.done{opacity:.5}
 
 /* house popup */
@@ -162,7 +158,7 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .phead .rd .bld{font-weight:500;color:var(--muted)}
 .phead .jb{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.35}
 .lbl{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:6px;vertical-align:1px}
-.lbl.n{background:#e7edff;color:#1f4fd1}.lbl.o{background:#eef0f2;color:#5b6672}
+.lbl.n{background:#e4f1fd;color:#1766b3}.lbl.o{background:#eef0f2;color:#5b6672}
 .pempty{padding:0 15px 13px;color:var(--muted);font-size:13px}
 .plist{border-top:1px solid var(--line);max-height:38vh;overflow:auto}
 .pc{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;padding:9px 13px;border-bottom:1px solid var(--line)}
@@ -210,7 +206,7 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .shp.flag{border-radius:3px 3px 3px 0;margin-bottom:22px}
 .shp.flag:after{content:"";position:absolute;left:0;bottom:-22px;width:3px;height:22px;background:var(--bg)}
 .shp.vert{writing-mode:vertical-rl;text-orientation:upright;padding:.75em .32em}
-.shp.sel{outline:3px solid #fff;box-shadow:0 0 0 6px rgba(31,79,209,.85),0 4px 12px rgba(0,0,0,.35)}
+.shp.sel{outline:3px solid #fff;box-shadow:0 0 0 6px rgba(45,140,240,.85),0 4px 12px rgba(0,0,0,.35)}
 .shp.lift{transform:translateY(-4px) scale(1.06)}
 .numb{min-width:24px;height:24px;padding:0 6px;border-radius:12px;display:grid;place-items:center;font:800 12.5px system-ui,sans-serif;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);pointer-events:none}
 
@@ -230,7 +226,7 @@ body.modal{overflow:hidden}
 /* account: feature nav + sub-sheets (colours, history) */
 .accnav{justify-content:stretch!important}
 .accnav button{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.65);border-radius:11px;padding:11px 8px;cursor:pointer;font-size:13.5px;font-weight:600}
-.accnav button:hover{background:rgba(31,79,209,.08)}
+.accnav button:hover{background:rgba(45,140,240,.08)}
 .sheet .small{font-size:12.5px;color:var(--muted);margin:0}
 /* colour list rows */
 #colList{display:flex;flex-direction:column;gap:2px}
@@ -271,16 +267,6 @@ body.modal{overflow:hidden}
 <div id="map"></div>
 <div id="msg" class="glass hide"></div>
 <div id="cross" hidden><svg viewBox="0 0 44 44" width="44" height="44"><circle cx="22" cy="22" r="9" fill="none" stroke="#fff" stroke-width="5"/><path d="M22 2v12M22 30v12M2 22h12M30 22h12" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="22" cy="22" r="9" fill="none" stroke="#c92a2a" stroke-width="2.5"/><path d="M22 2v12M22 30v12M2 22h12M30 22h12" stroke="#c92a2a" stroke-width="2.5" stroke-linecap="round"/><circle cx="22" cy="22" r="1.8" fill="#c92a2a"/></svg></div>
-
-<div id="legend" class="glass">
-  <h1 id="h1">Woni 택배</h1>
-  <div class="lg"><span class="d" style="background:var(--pp)"></span><span id="lgPP">Предоплата</span></div>
-  <div class="lg"><span class="d" style="background:var(--cc)"></span><span id="lgCC">Наложка</span></div>
-  <div class="lg"><span class="d" style="background:var(--part)"></span><span id="lgPART">Частичная</span></div>
-  <div class="lg"><span class="d" style="background:var(--cr)"></span><span id="lgCR">Кредит</span></div>
-  <div class="lg"><span class="d" style="background:var(--etc)"></span><span id="lgETC">Прочее</span></div>
-  <div class="lg"><span class="d" style="background:var(--done)"></span><span id="lgDONE">Доставлено</span></div>
-</div>
 
 <div id="prog" class="glass">
   <div class="big" id="progBig">0/0</div>
