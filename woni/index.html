@@ -3,12 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="color-scheme" content="light">
 <title>Woni 택배 헬퍼</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&family=Black+Han+Sans&family=Jua&family=Nanum+Pen+Script&display=swap">
 <style>
 :root{
+  color-scheme:light;
   --glass:rgba(255,255,255,.78);--glass2:rgba(255,255,255,.92);--ink:#16202b;--muted:#5b6672;--line:rgba(24,33,43,.12);
   --accent:#1f4fd1;--accentG:rgba(31,79,209,.9);--danger:#c92a2a;--note:#e8590c;
   --pp:#2f9e44;--cc:#e03131;--part:#f08c00;--cr:#1c7ed6;--etc:#7048e8;--done:#9aa4ad;
@@ -152,18 +154,18 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .pin.done{opacity:.5}
 
 /* house popup */
-.pop{position:relative;width:min(320px,calc(100vw - 32px));border-radius:16px;margin-bottom:14px;font-size:14px;background:var(--glass2);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);box-shadow:0 6px 22px rgba(0,0,0,.28)}
+.pop{position:relative;width:min(290px,calc(100vw - 40px));border-radius:15px;margin-bottom:13px;font-size:13.5px;background:var(--glass2);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);box-shadow:0 6px 22px rgba(0,0,0,.28)}
 .pop:after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-8px;border:8px solid transparent;border-bottom:0;border-top-color:var(--glass2)}
 .pop .x{position:absolute;top:8px;right:8px;width:30px;height:30px;border:0;background:none;font-size:18px;color:var(--muted);cursor:pointer;z-index:2}
-.phead{padding:13px 44px 11px 15px}
-.phead .rd{font-weight:800;font-size:14.5px;line-height:1.35}
+.phead{padding:10px 40px 8px 13px}
+.phead .rd{font-weight:800;font-size:14px;line-height:1.3}
 .phead .rd .bld{font-weight:500;color:var(--muted)}
 .phead .jb{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.35}
 .lbl{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:6px;vertical-align:1px}
 .lbl.n{background:#e7edff;color:#1f4fd1}.lbl.o{background:#eef0f2;color:#5b6672}
 .pempty{padding:0 15px 13px;color:var(--muted);font-size:13px}
 .plist{border-top:1px solid var(--line);max-height:38vh;overflow:auto}
-.pc{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:start;padding:11px 15px;border-bottom:1px solid var(--line)}
+.pc{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;padding:9px 13px;border-bottom:1px solid var(--line)}
 .pc:last-child{border-bottom:0}
 .pc.done{opacity:.5}
 .pc .dot{width:14px;height:14px;border-radius:50%;margin-top:3px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
@@ -180,12 +182,12 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .pc .del1{width:30px;height:30px;border-radius:50%;border:0;background:none;cursor:pointer;display:grid;place-items:center;color:var(--muted);flex:none}
 .pc .del1 svg{width:17px;height:17px}
 .pc .del1:hover{background:rgba(201,42,42,.1);color:var(--danger)}
-.pfoot{padding:11px 15px;display:flex;gap:9px}
-.pfoot button{flex:1;border:0;border-radius:10px;padding:11px;font-weight:700;font-size:14px;cursor:pointer}
+.pfoot{padding:9px 13px;display:flex;gap:8px}
+.pfoot button{flex:1;border:0;border-radius:10px;padding:9px;font-weight:700;font-size:13.5px;cursor:pointer}
 .pfoot .all{background:var(--accent);color:#fff}
 .pfoot .undo{background:rgba(24,33,43,.07);color:var(--ink)}
 /* per-building notes inside the popup */
-.pnotes{border-top:1px solid var(--line);padding:11px 15px 13px;display:flex;flex-direction:column;gap:7px}
+.pnotes{border-top:1px solid var(--line);padding:9px 13px 11px;display:flex;flex-direction:column;gap:6px}
 .pnotes .ntitle{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
 .pnotes .nlist{display:flex;flex-direction:column;gap:6px;max-height:150px;overflow:auto}
 .pnotes .note{background:rgba(255,246,238,.8);border:1px solid #ffd8bd;border-radius:8px;padding:7px 9px;display:grid;grid-template-columns:1fr auto;gap:4px}
@@ -193,7 +195,7 @@ body.edit #legend,body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .pnotes .note .d{grid-column:1/2;font-size:11px;color:var(--muted)}
 .pnotes .note button{grid-row:1/3;grid-column:2;border:0;background:none;color:var(--muted);font-size:15px;cursor:pointer}
 .pnotes .nempty{color:var(--muted);font-size:13px}
-.pnotes .nin{font:inherit;font-size:15px;border:1px solid var(--line);border-radius:8px;padding:8px;resize:none;min-height:52px;width:100%;background:rgba(255,255,255,.7)}
+.pnotes .nin{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;resize:none;min-height:40px;width:100%;background:rgba(255,255,255,.7)}
 .pnotes .nadd{align-self:flex-end;border:0;background:var(--accentG);color:#fff;font-weight:600;border-radius:8px;padding:8px 14px;cursor:pointer}
 
 /* shapes with text on the map */

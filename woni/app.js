@@ -102,9 +102,9 @@ function pinColor(g){
   return PAY_COLOR.PP;
 }
 function pinSVG(color,count){
-  return `<svg width="32" height="44" viewBox="0 0 32 44" xmlns="http://www.w3.org/2000/svg">
-    <path d="M16 43 C8 30 2 24 2 16 A14 14 0 1 1 30 16 C30 24 24 30 16 43 Z" fill="${color}" stroke="#fff" stroke-width="2.5"/>
-    <text x="16" y="21" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">${count}</text>
+  return `<svg width="24" height="28" viewBox="0 0 24 28" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2 a10 10 0 0 0 -10 10 c0 5.4 4.4 9.6 8.8 14.4 a1.6 1.6 0 0 1 2.4 0 c4.4 -4.8 8.8 -9 8.8 -14.4 a10 10 0 0 0 -10 -10 z" fill="${color}" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/>
+    <text x="12" y="16" text-anchor="middle" font-size="12.5" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">${count}</text>
   </svg>`;
 }
 function drawPins(){
