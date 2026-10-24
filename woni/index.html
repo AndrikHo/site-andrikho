@@ -38,16 +38,21 @@ button{font:inherit;color:inherit}
 #reset{position:fixed;left:50%;bottom:calc(var(--sb) + 16px);transform:translateX(-50%);z-index:30;border:0;border-radius:999px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;color:var(--ink)}
 #reset svg{width:17px;height:17px;vertical-align:-3px;margin-right:6px}
 
-.pin{position:relative;transform:translate(-50%,-50%);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;border:2.5px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.4);cursor:pointer;-webkit-user-select:none;user-select:none}
+/* teardrop pin: tip points down to building center */
+.pin{transform:translate(-50%,-100%);cursor:pointer;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35));-webkit-user-select:none;user-select:none;line-height:0}
 .pin.done{opacity:.5}
 
 .pop{position:relative;width:min(320px,calc(100vw - 32px));border-radius:16px;margin-bottom:14px;font-size:14px;background:var(--glass2);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);box-shadow:0 6px 22px rgba(0,0,0,.28)}
 .pop:after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-8px;border:8px solid transparent;border-bottom:0;border-top-color:var(--glass2)}
 .pop .x{position:absolute;top:8px;right:8px;width:30px;height:30px;border:0;background:none;font-size:18px;color:var(--muted);cursor:pointer;z-index:2}
 .phead{padding:13px 44px 11px 15px}
-.phead .rd{font-weight:800;font-size:15px;line-height:1.3}
-.phead .jb{color:var(--muted);font-size:12.5px;margin-top:3px}
-.plist{border-top:1px solid var(--line);max-height:46vh;overflow:auto}
+.phead .rd{font-weight:800;font-size:14.5px;line-height:1.35}
+.phead .rd .bld{font-weight:500;color:var(--muted)}
+.phead .jb{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.35}
+.lbl{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:6px;vertical-align:1px}
+.lbl.n{background:#e7edff;color:#1f4fd1}.lbl.o{background:#eef0f2;color:#5b6672}
+.pempty{padding:0 15px 13px;color:var(--muted);font-size:13px}
+.plist{border-top:1px solid var(--line);max-height:44vh;overflow:auto}
 .pc{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:start;padding:11px 15px;border-bottom:1px solid var(--line)}
 .pc:last-child{border-bottom:0}
 .pc.done{opacity:.5}
@@ -98,20 +103,21 @@ const KAKAO_KEY='53f83a531954055ca29efd3e8a0d1a45';
 const DONE_KEY='woni-test-done-v1';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const short=a=>(a||'').replace(/^부산(광역시)?\s+북구\s+/,'');
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let msgT;function msg(t,err,ms){const m=$('msg');m.textContent=t;m.className='glass'+(err?' err':'');clearTimeout(msgT);if(ms)msgT=setTimeout(()=>m.classList.add('hide'),ms)}
 
 const I18N={
  ru:{h1:'Woni 택배',pp:'Предоплата',cc:'Наложка',part:'Частичная',cr:'Кредит',etc:'Прочее',done:'Доставлено',
      deliveredN:'доставлено',reset:'Сбросить тест',sdk_fail:'Карта не загрузилась. Проверь интернет.',
-     hello:'Нажми на точку, чтобы увидеть посылки в доме.',payL:{PP:'선불',CC:'착불',PART:'부분',CR:'신용',ETC:'기타'},
+     hello:'Нажми на любой дом, чтобы увидеть адрес и посылки.',payL:{PP:'선불',CC:'착불',PART:'부분',CR:'신용',ETC:'기타'},
      won:'₩',deliverAll:'Доставить всё',undoAll:'Вернуть всё',more:'Развернуть',less:'Свернуть',
-     noAddr:'Адрес не найден',locale:'ru-RU'},
+     noAddr:'Адрес не найден',noParcels:'Посылок нет',locale:'ru-RU'},
  ko:{h1:'Woni 택배',pp:'선불',cc:'착불',part:'부분결제',cr:'신용',etc:'기타',done:'배송완료',
      deliveredN:'배송완료',reset:'테스트 초기화',sdk_fail:'지도를 불러오지 못했습니다. 인터넷을 확인하세요.',
-     hello:'점을 눌러 건물의 택배를 확인하세요.',payL:{PP:'선불',CC:'착불',PART:'부분',CR:'신용',ETC:'기타'},
+     hello:'아무 건물이나 누르면 주소와 택배가 보입니다.',payL:{PP:'선불',CC:'착불',PART:'부분',CR:'신용',ETC:'기타'},
      won:'원',deliverAll:'전체 배송완료',undoAll:'전체 취소',more:'더보기',less:'접기',
-     noAddr:'주소 없음',locale:'ko-KR'}};
+     noAddr:'주소 없음',noParcels:'택배 없음',locale:'ko-KR'}};
 let LANG=store.get('woni-lang',null)||((navigator.language||'').toLowerCase().startsWith('ko')?'ko':'ru');
 const T=I18N[LANG];
 function applyLang(){
@@ -133,7 +139,7 @@ sdk.onload=()=>kakao.maps.load(init);
 sdk.onerror=()=>msg(T.sdk_fail,true);
 document.head.appendChild(sdk);
 
-let map;
+let map,geocoder;
 const LL=p=>new kakao.maps.LatLng(p[0],p[1]);
 
 const buildings=[];
@@ -165,24 +171,31 @@ function buildGroups(){
     groups.push(g);
   }
 }
+function groupFor(b){return groups.find(g=>g.bld===b)||{bld:b,parcels:[],at:centroid(b.path)}}
 
 let poly=null,pins=[],pop=null,curG=null;
-function allDone(g){return g.parcels.every(p=>delivered.has(p.id))}
+function allDone(g){return g.parcels.length>0&&g.parcels.every(p=>delivered.has(p.id))}
 function pinColor(g){
-  if(allDone(g))return 'var(--done)';
+  if(allDone(g))return '#9aa4ad';
   const live=g.parcels.filter(p=>!delivered.has(p.id)).map(p=>p.payType);
   for(const t of PAY_PRIORITY)if(live.includes(t))return PAY_COLOR[t];
   return PAY_COLOR.PP;
+}
+/* teardrop marker, tip at bottom center (y=43) so it points into the building */
+function pinSVG(color,count){
+  return `<svg width="32" height="44" viewBox="0 0 32 44" xmlns="http://www.w3.org/2000/svg">
+    <path d="M16 43 C8 30 2 24 2 16 A14 14 0 1 1 30 16 C30 24 24 30 16 43 Z" fill="${color}" stroke="#fff" stroke-width="2.5"/>
+    <text x="16" y="21" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">${count}</text>
+  </svg>`;
 }
 function drawPins(){
   pins.forEach(o=>o.setMap(null));pins=[];
   groups.forEach(g=>{
     const el=document.createElement('div');
     el.className='pin'+(allDone(g)?' done':'');
-    el.style.background=pinColor(g);
-    el.textContent=g.parcels.length;
-    el.onclick=ev=>{ev.stopPropagation();openPop(g)};
-    const ov=new kakao.maps.CustomOverlay({map,position:LL(g.at),content:el,yAnchor:.5,xAnchor:.5,zIndex:5,clickable:true});
+    el.innerHTML=pinSVG(pinColor(g),g.parcels.length);
+    el.onclick=ev=>{ev.stopPropagation();openBuilding(g.bld)};
+    const ov=new kakao.maps.CustomOverlay({map,position:LL(g.at),content:el,yAnchor:1,xAnchor:.5,zIndex:5,clickable:true});
     ov.setMap(map);pins.push(ov);
   });
 }
@@ -210,33 +223,65 @@ function payBadge(p){const c=PAY_COLOR[p.payType];const lbl=T.payL[p.payType];
   else if(p.payType==='PART')cash=`<span class="cash" style="color:${c}">${T.won}${won(p.amount)}/${won(p.total)}</span>`;
   return `<span class="pay" style="background:${c}">${lbl}</span>${cash}`;
 }
-function openPop(g){curG=g;highlight(g);renderPop(g);
-  const pt=map.getProjection().containerPointFromCoords(LL(g.at));
-  if(pt.y<300)map.panBy(0,pt.y-300);
+
+/* resolve both addresses (new road + old jibun) via Kakao reverse geocode, cached per group */
+function resolveAddr(g,cb){
+  if(g.addr){cb();return;}
+  const [lat,lng]=g.at;
+  geocoder.coord2Address(lng,lat,(r,st)=>{
+    if(st===kakao.maps.services.Status.OK&&r[0]){
+      const ra=r[0].road_address,ad=r[0].address;
+      g.addr={road:ra?short(ra.address_name):'',bld:(ra&&ra.building_name)||'',jibun:ad?short(ad.address_name):''};
+    }else{
+      g.addr={road:g.bld?short((g.bld.rd+' '+g.bld.no).trim()):'',bld:'',jibun:''};
+    }
+    cb();
+  });
 }
+
+function openBuilding(b){
+  if(!b){closePop();return;}
+  const g=groupFor(b);curG=g;highlight(g);
+  resolveAddr(g,()=>{
+    renderPop(g);
+    const pt=map.getProjection().containerPointFromCoords(LL(g.at));
+    if(pt.y<320)map.panBy(0,pt.y-320);
+  });
+}
+function onMapTap(ll){
+  const b=buildingAt(ll.getLat(),ll.getLng());
+  if(b)openBuilding(b);else closePop();
+}
+
 function renderPop(g){
   if(pop)pop.setMap(null);
-  const b=g.bld;const el=document.createElement('div');el.className='pop';
-  const rd=b?(b.rd+' '+b.no):T.noAddr;
-  const rows=g.parcels.map((p,i)=>{
-    const done=delivered.has(p.id);
-    const longIns=(p.instr||'').length>14;
-    return `<div class="pc${done?' done':''}" data-i="${i}">
-      <span class="dot" style="background:${done?'var(--done)':PAY_COLOR[p.payType]}"></span>
-      <div class="mid">
-        <div class="unit">${esc(p.dtl)} ${payBadge(p)}</div>
-        ${p.instr?`<div class="ins${longIns?' clip':''}" data-ins>${esc(p.instr)}</div>${longIns?`<button class="exp" data-exp>${T.more}</button>`:''}`:''}
-      </div>
-      <button class="chk" data-chk aria-label="deliver">${done?'✓':'○'}</button>
+  const a=g.addr||{road:'',bld:'',jibun:''};
+  const el=document.createElement('div');el.className='pop';
+  const head=`<div class="phead">
+      ${a.road?`<div class="rd"><span class="lbl n">도로명</span>${esc(a.road)}${a.bld?` <span class="bld">${esc(a.bld)}</span>`:''}</div>`:''}
+      <div class="jb"><span class="lbl o">지번</span>${esc(a.jibun||T.noAddr)}</div>
     </div>`;
-  }).join('');
-  const everyDone=allDone(g);
-  el.innerHTML=`<button class="x" aria-label="close">✕</button>
-    <div class="phead"><div class="rd">${esc(rd)}</div></div>
-    <div class="plist">${rows}</div>
-    <div class="pfoot">
-      ${everyDone?`<button class="undo" data-undoall>${T.undoAll}</button>`:`<button class="all" data-all>${T.deliverAll}</button>`}
-    </div>`;
+  let body;
+  if(g.parcels.length){
+    const rows=g.parcels.map((p,i)=>{
+      const done=delivered.has(p.id);
+      const longIns=(p.instr||'').length>14;
+      return `<div class="pc${done?' done':''}" data-i="${i}">
+        <span class="dot" style="background:${done?'var(--done)':PAY_COLOR[p.payType]}"></span>
+        <div class="mid">
+          <div class="unit">${esc(p.dtl)} ${payBadge(p)}</div>
+          ${p.instr?`<div class="ins${longIns?' clip':''}" data-ins>${esc(p.instr)}</div>${longIns?`<button class="exp" data-exp>${T.more}</button>`:''}`:''}
+        </div>
+        <button class="chk" data-chk aria-label="deliver">${done?'✓':'○'}</button>
+      </div>`;
+    }).join('');
+    const everyDone=allDone(g);
+    body=`<div class="plist">${rows}</div>
+      <div class="pfoot">${everyDone?`<button class="undo" data-undoall>${T.undoAll}</button>`:`<button class="all" data-all>${T.deliverAll}</button>`}</div>`;
+  }else{
+    body=`<div class="pempty">${T.noParcels}</div>`;
+  }
+  el.innerHTML=`<button class="x" aria-label="close">✕</button>${head}${body}`;
   ['click','mousedown','touchstart','touchend','wheel','pointerdown','dblclick'].forEach(ev=>el.addEventListener(ev,e=>e.stopPropagation()));
   el.querySelector('.x').onclick=closePop;
   el.querySelectorAll('.pc').forEach(row=>{
@@ -256,7 +301,8 @@ function init(){
   applyLang();
   loadBuildings();buildGroups();
   map=new kakao.maps.Map($('map'),{center:new kakao.maps.LatLng(35.20755,129.00615),level:3});
-  kakao.maps.event.addListener(map,'click',closePop);
+  geocoder=new kakao.maps.services.Geocoder();
+  kakao.maps.event.addListener(map,'click',e=>onMapTap(e.latLng));
   const bnd=new kakao.maps.LatLngBounds();
   groups.forEach(g=>bnd.extend(LL(g.at)));
   if(groups.length)map.setBounds(bnd,90,90,90,90);
