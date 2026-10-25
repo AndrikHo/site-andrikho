@@ -10,7 +10,7 @@ let msgT;function msg(t,err,ms){const m=$('msg');m.textContent=t;m.className='gl
 const I18N={
  ru:{
    h1:'Woni 택배',pp:'Предоплата',cc:'Наложка',part:'Частичная',cr:'Кредит',etc:'Прочее',done:'Доставлено',
-   deliveredN:'доставлено',reset:'Сбросить тест',sdk_fail:'Карта не загрузилась. Проверь интернет.',
+   deliveredN:'доставлено',sdk_fail:'Карта не загрузилась. Проверь интернет.',
    hello:'Нажми на любой дом, чтобы увидеть адрес, посылки и заметки.',payL:{PP:'선불',CC:'착불',PART:'부분',CR:'신용',ETC:'기타'},
    won:'₩',deliverAll:'Доставить всё',undoAll:'Вернуть всё',more:'Развернуть',less:'Свернуть',
    noAddr:'Адрес не найден',noParcels:'Посылок нет',locale:'ru-RU',
@@ -56,7 +56,7 @@ const I18N={
  },
  ko:{
    h1:'Woni 택배',pp:'선불',cc:'착불',part:'부분결제',cr:'신용',etc:'기타',done:'배송완료',
-   deliveredN:'배송완료',reset:'테스트 초기화',sdk_fail:'지도를 불러오지 못했습니다. 인터넷을 확인하세요.',
+   deliveredN:'배송완료',sdk_fail:'지도를 불러오지 못했습니다. 인터넷을 확인하세요.',
    hello:'아무 건물이나 누르면 주소, 택배, 메모가 보입니다.',payL:{PP:'선불',CC:'착불',PART:'부분',CR:'신용',ETC:'기타'},
    won:'원',deliverAll:'전체 배송완료',undoAll:'전체 취소',more:'더보기',less:'접기',
    noAddr:'주소 없음',noParcels:'택배 없음',locale:'ko-KR',

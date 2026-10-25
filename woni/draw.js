@@ -61,7 +61,7 @@ function setTool(t){
 }
 function select(it,quiet){sel=it;if(map)map.setZoomable(!it);if(!quiet){drawAll();refreshUI();}}
 
-function openPanel(k){panel=k;const f=$('fly');show(f,!!k,'r');if(k)renderPanel();refreshToolBtns();}
+function openPanel(k){panel=k;const f=$('fly');show(f,!!k,'r');if(k){renderPanel();show($('ctxIsl'),false,'t');refreshToolBtns();}else refreshUI();}
 function refreshToolBtns(){
   const set=(id,on)=>{const e=$(id);if(e)e.classList.toggle('on',on);};
   set('tZone',tool==='zone');set('tShape',panel==='shape'||tool==='shape');
@@ -213,7 +213,7 @@ function openText(it,isNew){
 }
 function closeText(){show($('txtSheet'),false,'b');show($('closeBtn'),editing,'b');if(document.activeElement)document.activeElement.blur();txtCtx=null;}
 
-/* account sheet: language, backup, clear, reset */
+/* account sheet: language, backup, clear */
 function showAcc(on){show($('accSheet'),on,'b');show($('mainIsl'),!on&&!editing,'b');}
 
 /* ---------- rendering ---------- */
@@ -437,8 +437,6 @@ $('impFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const
   catch(err){msg(tr('imp_bad'),true,4000);}e.target.value='';};
 $('accClear').onclick=function(){if(this.dataset.sure){snap();D.items=[];D.zone=[];saveD();drawAll();delete this.dataset.sure;this.textContent=tr('acc_clear');msg(tr('cleared'),false,4000);}
   else{this.dataset.sure=1;this.textContent=tr('sure_del');}};
-$('accReset').onclick=function(){if(this.dataset.sure){delivered.clear();saveDone();closePop();drawPins();updateProgress();delete this.dataset.sure;this.textContent=tr('reset');msg(tr('cleared'),false,2500);showAcc(false);}
-  else{this.dataset.sure=1;this.textContent=tr('sure_del');}};
 
 /* ---------- integration hooks for app.js ---------- */
 window.drawOnTap=function(ll){
@@ -455,7 +453,7 @@ window.drawApplyLang=function(){
   Aa('hUndo','undo',1);Aa('hRedo','redo',1);
   $('txtIn').placeholder=tr('text_ph');$('n1').placeholder=tr('from');Aa('n1','from');$('n2').placeholder=tr('to');Aa('n2','to');
   T2('txtDel','del');T2('txtCancel','cancel');T2('txtOk','ok');
-  T2('accH','acc');T2('accP','acc_p');T2('accClear','acc_clear');T2('accImp','acc_imp');T2('accExp','acc_exp');T2('accReset','reset');T2('accClose','close');T2('langL','lang');
+  T2('accH','acc');T2('accP','acc_p');T2('accClear','acc_clear');T2('accImp','acc_imp');T2('accExp','acc_exp');T2('accClose','close');T2('langL','lang');
   T2('loginSoon','login_soon');$('loginEmp').placeholder=tr('login_emp');$('loginPhone').placeholder=tr('login_phone');$('loginPw').placeholder=tr('login_pw');T2('loginBtn','login');
   document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',b.dataset.l===LANG));
   if(D){refreshUI();if(panel)renderPanel();}

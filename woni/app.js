@@ -59,6 +59,23 @@ function inPoly(lat,lng,path){let ins=false;for(let i=0,j=path.length-1;i<path.l
 function buildingAt(lat,lng){let best=null,area=1e9;
   for(const b of buildings){const[a,c,d,e]=b.bb;if(lat<a||lat>d||lng<c||lng>e)continue;
     if(inPoly(lat,lng,b.path)){const ar=(d-a)*(e-c);if(ar<area){area=ar;best=b}}}return best}
+/* nearest building footprint to a point, within maxM metres (search fallback) */
+function nearestBuilding(lat,lng,maxM){
+  let best=null,bd=Infinity;const pad=maxM/111320;
+  for(const b of buildings){const[a,c,d,e]=b.bb;
+    if(lat<a-pad||lat>d+pad||lng<c-pad||lng>e+pad)continue;
+    const[cy,cx]=centroid(b.path);
+    const dy=(lat-cy)*111320,dx=(lng-cx)*111320*Math.cos(lat*Math.PI/180),dist=Math.hypot(dx,dy);
+    if(dist<bd){bd=dist;best=b}}
+  return bd<=maxM?best:null;
+}
+/* exact footprint by road name + building number (search precision) */
+function buildingByRoad(rd,no){
+  if(!rd||!no)return null;let best=null,area=1e9;
+  for(const b of buildings){if(b.rd!==rd||b.no!==no)continue;
+    const[a,c,d,e]=b.bb,ar=(d-a)*(e-c);if(ar<area){area=ar;best=b}}
+  return best;
+}
 function centroid(path){
   // area-weighted polygon centroid (true geometric centre); path = [[lat,lng],...]
   let A=0,cx=0,cy=0;
@@ -189,10 +206,10 @@ function notesBlock(g){
   const k=keyOf(g),list=(notes[k]&&notes[k].list)||[];
   const items=list.length?list.map((n,i)=>`<div class="note"><div class="t">${esc(n.t)}</div>
       <div class="d">${new Date(n.at).toLocaleString(T.locale,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
-      <button data-ndel="${i}" aria-label="${esc(T.note_del)}">✕</button></div>`).join(''):`<div class="nempty">${T.no_notes}</div>`;
+      <button data-ndel="${i}" aria-label="${esc(T.note_del)}">✕</button></div>`).join(''):'';
   return `<div class="pnotes"><div class="ntitle">${T.notes_title}</div>
     <div class="nlist">${items}</div>
-    <textarea class="nin" placeholder="${esc(T.note_ph)}"></textarea>
+    <textarea class="nin" rows="1" placeholder=""></textarea>
     <button class="nadd">${T.save}</button></div>`;
 }
 function renderPop(g){
@@ -264,13 +281,16 @@ function runSearch(){
   const ql=q.toLowerCase();
   // local notes first
   for(const key in notes){const g=groups.find(x=>keyOf(x)===key);const txt=notes[key].list.map(n=>n.t).join(' ');
-    if(txt.toLowerCase().includes(ql)&&g)push({nm:(g.addr&&g.addr.road)||short((g.bld?g.bld.rd+' '+g.bld.no:'')),ad:txt.slice(0,40),lat:g.at[0],lng:g.at[1],noted:true})}
+    if(txt.toLowerCase().includes(ql)&&g)push({nm:(g.addr&&g.addr.road)||short((g.bld?g.bld.rd+' '+g.bld.no:'')),ad:txt.slice(0,40),lat:g.at[0],lng:g.at[1],noted:true,rd:g.bld?g.bld.rd:'',no:g.bld?g.bld.no:''})}
   const S=kakao.maps.services,loc=new kakao.maps.LatLng(AREA_C[0],AREA_C[1]);let left=2;
   const fin=()=>{if(--left||seq!==sSeq)return;sItems=out.slice(0,12);renderSugg()};
   geocoder.addressSearch('부산 북구 '+q,(r,st)=>{if(st===S.Status.OK)r.forEach(adr=>{const lat=+adr.y,lng=+adr.x;if(!inArea(lat,lng,adr.address_name))return;
-      const ra=adr.road_address,ad=adr.address;push({nm:ra?short(ra.address_name)+(ra.building_name?' '+ra.building_name:''):short(adr.address_name),ad:ad?'지번 '+short(ad.address_name):'',lat,lng})});fin()},{size:10});
+      const ra=adr.road_address,ad=adr.address;
+      const rno=ra?(ra.sub_building_no&&ra.sub_building_no!=='0'?ra.main_building_no+'-'+ra.sub_building_no:ra.main_building_no):'';
+      push({nm:ra?short(ra.address_name)+(ra.building_name?' '+ra.building_name:''):short(adr.address_name),ad:ad?'지번 '+short(ad.address_name):'',lat,lng,rd:ra?ra.road_name:'',no:rno})});fin()},{size:10});
   new S.Places().keywordSearch(q,(r,st)=>{if(st===S.Status.OK)r.forEach(p=>{const lat=+p.y,lng=+p.x;if(!inArea(lat,lng,p.address_name))return;
-      push({nm:p.place_name,ad:short(p.road_address_name||p.address_name),lat,lng})});fin()},{location:loc,radius:AREA_R,sort:S.SortBy.DISTANCE});
+      const parts=(p.road_address_name||'').trim().split(/\s+/),last=parts[parts.length-1]||'',hasNo=/\d/.test(last);
+      push({nm:p.place_name,ad:short(p.road_address_name||p.address_name),lat,lng,rd:hasNo?parts[parts.length-2]||'':'',no:hasNo?last:''})});fin()},{location:loc,radius:AREA_R,sort:S.SortBy.DISTANCE});
 }
 function renderSugg(){
   sugg().innerHTML=sItems.length?sItems.map((it,i)=>`<li data-i="${i}"><div class="nm">${esc(it.nm)}${it.noted?`<span class="tg">${T.tag_note}</span>`:''}</div>${it.ad?`<div class="ad">${esc(it.ad)}</div>`:''}</li>`).join(''):`<li class="none">${T.nothing}</li>`;
@@ -278,7 +298,10 @@ function renderSugg(){
 }
 function pick(it){
   openSearch(false);if(window.editing&&window.setEditing)window.setEditing(false);
-  const ll=new kakao.maps.LatLng(it.lat,it.lng);map.setLevel(2);map.setCenter(ll);pressHouse(ll);
+  const b=buildingByRoad(it.rd,it.no)||buildingAt(it.lat,it.lng)||nearestBuilding(it.lat,it.lng,35);
+  const ll=b?LL(centroid(b.path)):new kakao.maps.LatLng(it.lat,it.lng);
+  map.setLevel(2);map.setCenter(ll);
+  if(b)openBuilding(b);else closePop();
 }
 
 /* ---------- language ---------- */

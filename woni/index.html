@@ -83,7 +83,7 @@ body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .tb .cdot{position:absolute;right:7px;bottom:7px;width:13px;height:13px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
 
 /* flyout panel left of the tool island */
-#fly{right:calc(var(--sr) + 82px);bottom:calc(var(--sb) + 92px);width:min(300px,calc(100vw - 104px - var(--sr) - var(--sl)));max-height:calc(100vh - var(--st) - var(--sb) - 290px);overflow:auto;padding:12px;border-radius:18px;display:flex;flex-direction:column;gap:10px}
+#fly{right:calc(var(--sr) + 82px);bottom:calc(var(--sb) + 92px);width:min(290px,calc(100vw - 104px - var(--sr) - var(--sl)));max-height:calc(100vh - var(--st) - var(--sb) - 180px);overflow:auto;padding:10px;border-radius:18px;display:flex;flex-direction:column;gap:7px}
 #fly h3{margin:0;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
 .opt{border:1px solid var(--line);background:rgba(255,255,255,.55);border-radius:12px;padding:8px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--ink);min-height:70px;justify-content:center}
@@ -95,8 +95,8 @@ body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .seg{display:flex;gap:6px;flex-wrap:wrap}
 .seg button{border:1px solid var(--line);background:rgba(255,255,255,.55);border-radius:9px;padding:7px 11px;cursor:pointer;font-size:13.5px}
 .seg button.on{background:var(--accentG);border-color:transparent;color:#fff}
-.fonts{display:flex;flex-direction:column;gap:6px}
-.fonts button{border:1px solid var(--line);background:rgba(255,255,255,.55);border-radius:10px;padding:8px 12px;text-align:left;cursor:pointer;font-size:17px}
+.fonts{display:flex;flex-direction:column;gap:5px}
+.fonts button{border:1px solid var(--line);background:rgba(255,255,255,.55);border-radius:10px;padding:6px 11px;text-align:left;cursor:pointer;font-size:15px}
 .fonts button.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
 .sws{display:flex;gap:7px;flex-wrap:wrap}
 .sw{width:28px;height:28px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.18);cursor:pointer;padding:0}
@@ -191,7 +191,7 @@ body.edit #prog,body.edit #stab{opacity:0;pointer-events:none}
 .pnotes .note .d{grid-column:1/2;font-size:11px;color:var(--muted)}
 .pnotes .note button{grid-row:1/3;grid-column:2;border:0;background:none;color:var(--muted);font-size:15px;cursor:pointer}
 .pnotes .nempty{color:var(--muted);font-size:13px}
-.pnotes .nin{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;resize:none;min-height:40px;width:100%;background:rgba(255,255,255,.7)}
+.pnotes .nin{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;resize:none;height:34px;min-height:34px;width:100%;background:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden}
 .pnotes .nadd{align-self:flex-end;border:0;background:var(--accentG);color:#fff;font-weight:600;border-radius:8px;padding:8px 14px;cursor:pointer}
 
 /* shapes with text on the map */
@@ -228,6 +228,16 @@ body.modal{overflow:hidden}
 .accnav button{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.65);border-radius:11px;padding:11px 8px;cursor:pointer;font-size:13.5px;font-weight:600}
 .accnav button:hover{background:rgba(45,140,240,.08)}
 .sheet .small{font-size:12.5px;color:var(--muted);margin:0}
+#accSheet{gap:8px}
+#accSheet h4{font-size:13px}
+#accSheet p{font-size:12px;line-height:1.4}
+#accSheet .langrow{font-size:12.5px}
+#accSheet .acts button{padding:7px 11px;font-size:12.5px}
+#accSheet .accnav button{padding:9px 6px;font-size:12px}
+#accSheet .loginBox{padding:10px;gap:6px}
+#accSheet .loginBox .loginNote{font-size:10.5px}
+#accSheet .loginBox input{font-size:15px;padding:8px}
+#accSheet .loginBox .pri{padding:9px;font-size:13px}
 /* colour list rows */
 #colList{display:flex;flex-direction:column;gap:2px}
 .colrow{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer}
@@ -328,11 +338,13 @@ body.modal{overflow:hidden}
   </div>
   <p id="accP">Логин для всех курьеров появится позже. Сейчас рисунки и заметки хранятся только на этом телефоне. Сохрани копию, чтобы не потерять их или перенести на другой телефон.</p>
   <div class="acts">
-    <button class="danger" id="accClear">Удалить все рисунки</button>
     <button id="accImp">Загрузить копию</button>
     <button class="pri" id="accExp">Сохранить копию</button>
   </div>
-  <div class="acts"><button id="accReset">Сбросить тест</button><button id="accClose">Закрыть</button></div>
+  <div class="acts">
+    <button class="danger" id="accClear">Удалить все рисунки</button>
+    <button id="accClose">Закрыть</button>
+  </div>
   <input type="file" id="impFile" accept="application/json,.json" hidden>
 </div>
 
